@@ -1,0 +1,95 @@
+{
+  "project_name": "c3a/worker",
+  "langs": [
+    "Rust"
+  ],
+  "targets": [
+    {
+      "arch": "x86_64",
+      "os": "Linux",
+      "derivative": "any",
+      "version": "No"
+    }
+  ],
+  "deploy_toolkit": "docker-compose",
+  "builds": [
+    "deploy-build-200b2d50-84d8-4a66-a5d7-7546f2212d08"
+  ],
+  "last_build": "deploy-build-200b2d50-84d8-4a66-a5d7-7546f2212d08",
+  "cache_files": [
+    "Cargo.lock",
+    "target"
+  ],
+  "pipelines": [
+    {
+      "title": "build",
+      "desc": "Got from `Rust Default Pipeline`. Build the Rust project with Cargo.",
+      "info": "rust-default@0.1.0",
+      "tags": [],
+      "actions": [
+        {
+          "title": "Build the project.",
+          "desc": "Got from `Cargo Build (Release)`. Build the Rust project with Cargo default settings in release mode",
+          "info": "cargo-rel@0.1",
+          "tags": [
+            "rust",
+            "cargo"
+          ],
+          "action": {
+            "Build": {
+              "supported_langs": [
+                "Rust"
+              ],
+              "commands": [
+                {
+                  "bash_c": "cargo build --release",
+                  "ignore_fails": false,
+                  "af_placeholder": null,
+                  "replace_af_with": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "title": "Compress the resulting binary.",
+          "desc": "Got from `UPX Compress`. Compress the binary file with UPX.",
+          "info": "upx-compress@0.1.0",
+          "tags": [],
+          "action": {
+            "PostBuild": {
+              "supported_langs": [
+                "Rust",
+                "Go",
+                "C",
+                "Cpp",
+                {
+                  "Other": "any"
+                }
+              ],
+              "commands": [
+                {
+                  "bash_c": "upx %af%",
+                  "ignore_fails": false,
+                  "af_placeholder": "%af%",
+                  "replace_af_with": [
+                    "target/release/c3a-worker"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "artifacts": [
+    "target/release/c3a-worker"
+  ],
+  "inplace_artifacts_into_project_root": [
+    [
+      "target/release/c3a-worker",
+      "c3a-worker"
+    ]
+  ]
+}

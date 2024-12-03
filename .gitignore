@@ -1,6 +1,6 @@
 Cargo.lock
+artifacts
 target
 cc-kws
 c3a-worker/c3a-frontend
 c3a-frontend/dist
-c3a-frontend/artifacts
