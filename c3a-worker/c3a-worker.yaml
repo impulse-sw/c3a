@@ -1,0 +1,4 @@
+startup_type: http_localhost
+server_port: 8072
+allow_oapi_access: false
+log_level: debug
