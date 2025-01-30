@@ -2,7 +2,27 @@ mod auth;
 mod services;
 
 use cc_server_kit::prelude::*;
-use cc_server_kit::utils::prelude::*;
+use cc_server_kit::cc_utils::prelude::*;
+use cc_static_server::frontend_router;
+use salvo::affix_state;
+
+static KV_ADDR: &str = "redis://valkey:6379";
+
+pub(crate) type TokensDbPool = bb8::Pool<bb8_redis::RedisConnectionManager>;
+
+async fn connect_redis(redis_url: &str) -> MResult<TokensDbPool> {
+  use bb8_redis::RedisConnectionManager;
+  use bb8::Pool as Bb8Pool;
+  
+  let manager = RedisConnectionManager::new(redis_url)
+    .map_err(|_| format!("Не удалось подключиться к базе данных (`{}`) через bb8_redis.", redis_url))?;
+  Ok(
+    Bb8Pool::builder()
+      .build(manager)
+      .await
+      .map_err(|_| "Не удалось построить пул соединений через bb8_redis, хотя подключение прошло успешно.".to_string())?
+  )
+}
 
 #[derive(Default, Clone)]
 struct Setup {
@@ -14,55 +34,14 @@ impl GenericSetup for Setup {
   fn set_generic_values(&mut self, generic_values: GenericValues) { self.generic_values = generic_values; }
 }
 
-const LOCAL_FRONTEND_DISTRIBUTABLE: &str = "c3a-frontend/";
-const CONTAINER_FRONTEND_DISTRIBUTABLE: &str = "/usr/local/frontend-dist/";
-
-async fn get_filepath_from_dist(filename: impl Into<String>) -> MResult<String> {
-  let filename = filename.into();
-  tracing::debug!("Пытаемся получить доступ к файлу {}", filename);
-  
-  let filepath = format!("{}{}", CONTAINER_FRONTEND_DISTRIBUTABLE, &filename);
-  if tokio::fs::try_exists(&filepath).await? { return Ok(filepath) }
-  let filepath = format!("{}{}", LOCAL_FRONTEND_DISTRIBUTABLE, &filename);
-  if tokio::fs::try_exists(&filepath).await? { return Ok(filepath) }
-    
-  Err(ErrorResponse::from(format!(r#"Не удалось открыть файл "{}""#, filename)).with_404_pub().build())
-}
-
-async fn get_from_dist(filename: impl Into<String>) -> MResult<File> {
-  let filename = filename.into();
-  let filepath = get_filepath_from_dist(&filename).await?;
-  file_upload!(filepath, filename)
-}
-
-#[handler]
-#[tracing::instrument(skip_all, fields(http.uri = req.uri().path(), http.method = req.method().as_str()))]
-async fn frontend(req: &Request) -> MResult<Html> {
-  let filepath = get_filepath_from_dist("index.html").await?;
-  let site = tokio::fs::read_to_string(&filepath).await?;
-  html!(site)
-}
-
-#[handler]
-#[tracing::instrument(skip_all, fields(http.uri = req.uri().path(), http.method = req.method().as_str()))]
-async fn get_uikit_app_internals(req: &Request) -> MResult<File> {
-  let rest_path = req.param::<String>("rest_path").ok_or("Не удалось получить остальной путь.")?;
-  get_from_dist(rest_path).await.consider(Some(StatusCode::NOT_FOUND), None::<String>, true)
-}
-
-fn frontend_router() -> Router {
-  Router::new()
-    .get(frontend)
-    .push(Router::with_path("sign-in").get(frontend))
-    .push(Router::with_path("sign-up").get(frontend))
-    .push(Router::with_path("<**rest_path>").get(get_uikit_app_internals))
-}
-
 #[tokio::main]
 async fn main() {
   let setup = load_generic_config::<Setup>("c3a-worker").await.unwrap();
   let state = load_generic_state(&setup).await.unwrap();
-  let router = get_root_router(&state, setup.clone()).push(frontend_router());
+  let kv_db = connect_redis(KV_ADDR).await.unwrap();
+  let router = get_root_router(&state)
+    .hoop(affix_state::inject(state.clone()).inject(setup.clone()).inject(kv_db))
+    .push(frontend_router());
   let (server, _) = start(state, &setup, router).await.unwrap();
   server.await
 }

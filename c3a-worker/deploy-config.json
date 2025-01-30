@@ -1,5 +1,5 @@
 {
-  "project_name": "c3a/worker",
+  "project_name": "c3a-worker",
   "langs": [
     "Rust"
   ],
@@ -11,24 +11,49 @@
       "version": "No"
     }
   ],
-  "deploy_toolkit": "docker-compose",
-  "builds": [
-    "deploy-build-200b2d50-84d8-4a66-a5d7-7546f2212d08"
-  ],
-  "last_build": "deploy-build-200b2d50-84d8-4a66-a5d7-7546f2212d08",
+  "deploy_toolkit": null,
   "cache_files": [
+    ".git",
     "Cargo.lock",
     "target"
   ],
   "pipelines": [
     {
       "title": "build",
-      "desc": "Got from `Rust Default Pipeline`. Build the Rust project with Cargo.",
+      "desc": "Got from `Default Rust Pipeline`. ",
       "info": "rust-default@0.1.0",
-      "tags": [],
+      "tags": [
+        "rust",
+        "cargo",
+        "upx"
+      ],
       "actions": [
         {
-          "title": "Build the project.",
+          "title": "Lint",
+          "desc": "Got from `Cargo Clippy`. ",
+          "info": "cargo-clippy@0.1.0",
+          "tags": [
+            "cargo",
+            "clippy"
+          ],
+          "action": {
+            "PreBuild": {
+              "supported_langs": [
+                "Rust"
+              ],
+              "commands": [
+                {
+                  "bash_c": "cargo clippy",
+                  "ignore_fails": false,
+                  "show_success_output": true,
+                  "show_bash_c": true
+                }
+              ]
+            }
+          }
+        },
+        {
+          "title": "Build",
           "desc": "Got from `Cargo Build (Release)`. Build the Rust project with Cargo default settings in release mode",
           "info": "cargo-rel@0.1",
           "tags": [
@@ -44,18 +69,20 @@
                 {
                   "bash_c": "cargo build --release",
                   "ignore_fails": false,
-                  "af_placeholder": null,
-                  "replace_af_with": []
+                  "show_success_output": false,
+                  "show_bash_c": true
                 }
               ]
             }
           }
         },
         {
-          "title": "Compress the resulting binary.",
+          "title": "Compress",
           "desc": "Got from `UPX Compress`. Compress the binary file with UPX.",
           "info": "upx-compress@0.1.0",
-          "tags": [],
+          "tags": [
+            "upx"
+          ],
           "action": {
             "PostBuild": {
               "supported_langs": [
@@ -63,33 +90,53 @@
                 "Go",
                 "C",
                 "Cpp",
+                "Python",
                 {
                   "Other": "any"
                 }
               ],
               "commands": [
                 {
-                  "bash_c": "upx %af%",
+                  "bash_c": "upx <artifact>",
+                  "placeholders": [
+                    "<artifact>"
+                  ],
+                  "replacements": [
+                    [
+                      [
+                        "<artifact>",
+                        {
+                          "title": "target/release/c3a-worker",
+                          "is_secret": false,
+                          "value": {
+                            "Plain": "target/release/c3a-worker"
+                          }
+                        }
+                      ]
+                    ]
+                  ],
                   "ignore_fails": false,
-                  "af_placeholder": "%af%",
-                  "replace_af_with": [
-                    "target/release/c3a-worker"
-                  ]
+                  "show_success_output": false,
+                  "show_bash_c": false
                 }
               ]
             }
           }
         }
-      ]
+      ],
+      "default": true
     }
   ],
   "artifacts": [
     "target/release/c3a-worker"
   ],
-  "inplace_artifacts_into_project_root": [
+  "variables": [],
+  "place_artifacts_into_project_root": [
     [
       "target/release/c3a-worker",
       "c3a-worker"
     ]
-  ]
+  ],
+  "containered_options": null,
+  "version": 2
 }

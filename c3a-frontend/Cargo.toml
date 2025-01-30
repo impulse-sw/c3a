@@ -1,17 +1,16 @@
 [package]
 name = "c3a-frontend"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Klimenty Titov <aclo.create@gmail.com>"]
 
 [dependencies]
-cc-utils = { git = "https://github.com/markcda/cc-utils.git", default-features = false, features = ["reqwest", "web-sys", "web-ws"] }
-cc-ui-kit = { git = "https://github.com/markcda/cc-ui-kit.git" }
-console_error_panic_hook = "0.1.7"
-console_log = "1"
-dioxus = "0.4"
-log = "0.4"
-web-sys = { version = "0.3", features = ["Storage", "Window", "Navigator"] }
+cc-utils = { git = "https://github.com/markcda/cc-utils.git", tag = "0.5.4", default-features = false, features = ["reqwest"] }
+cc-ui-kit = { git = "https://github.com/markcda/cc-ui-kit.git", tag = "0.1.0-alpha-5" }
+leptos = { version = "0.7", features = ["csr"] }
+leptos_i18n = { version = "0.5", features = ["csr"] }
+leptos_meta = "0.7"
+leptos_router = "0.7"
 
 [profile.release]
 opt-level = "z"
@@ -21,3 +20,7 @@ codegen-units = 1
 panic = "abort"
 strip = true
 incremental = false
+
+[package.metadata.leptos-i18n]
+default = "en"
+locales = ["en", "ru"]

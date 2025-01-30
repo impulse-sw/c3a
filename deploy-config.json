@@ -1,143 +1,50 @@
 {
-  "langs": [],
-  "targets": [],
-  "deploy_toolkit": null,
-  "builds": [
-    "deploy-build-ddfc6073-6934-4a98-9859-6ab149f33dfb"
+  "project_name": "c3a",
+  "langs": [
+    "Rust"
   ],
-  "last_build": "deploy-build-ddfc6073-6934-4a98-9859-6ab149f33dfb",
-  "cache_files": [],
-  "pipelines": [
+  "targets": [
     {
-      "title": "deploy",
-      "desc": "Got from `Deploy the Docker Compose configuration`. Uses Docker Compose to deploy your project.",
-      "info": "docker-compose@0.1.0",
-      "tags": [
-        "docker",
-        "docker-compose"
-      ],
-      "actions": [
-        {
-          "title": "Build the C3A Frontend",
-          "desc": "",
-          "info": "deployer@1",
-          "tags": [],
-          "action": {
-            "Build": {
-              "supported_langs": [
-                "Rust"
-              ],
-              "commands": [
-                {
-                  "bash_c": "cd c3a-frontend && deployer build",
-                  "ignore_fails": false,
-                  "af_placeholder": null,
-                  "replace_af_with": []
-                }
-              ]
-            }
-          }
-        },
-        {
-          "title": "Build the C3A Worker",
-          "desc": "",
-          "info": "deployer@2",
-          "tags": [],
-          "action": {
-            "Build": {
-              "supported_langs": [
-                "Rust"
-              ],
-              "commands": [
-                {
-                  "bash_c": "cd c3a-worker && deployer build",
-                  "ignore_fails": false,
-                  "af_placeholder": null,
-                  "replace_af_with": []
-                }
-              ]
-            }
-          }
-        },
-        {
-          "title": "Sync artifacts",
-          "desc": "",
-          "info": "deployer@3",
-          "tags": [],
-          "action": "ForceArtifactsEnplace"
-        },
-        {
-          "title": "Build the Compose services",
-          "desc": "Got from `Docker Compose Build`. Build the Compose services",
-          "info": "docker-compose-build@0.1.0",
-          "tags": [
-            "docker-compose"
-          ],
-          "action": {
-            "ConfigureDeploy": {
-              "deploy_toolkit": "docker-compose",
-              "tags": [],
-              "commands": [
-                {
-                  "bash_c": "docker compose build",
-                  "ignore_fails": false,
-                  "af_placeholder": null,
-                  "replace_af_with": []
-                }
-              ]
-            }
-          }
-        },
-        {
-          "title": "Up the Compose services",
-          "desc": "Got from `Docker Compose - Up`. Up the Compose services.",
-          "info": "docker-compose@0.1.0",
-          "tags": [
-            "docker",
-            "docker-compose"
-          ],
-          "action": {
-            "Deploy": {
-              "deploy_toolkit": "docker-compose",
-              "tags": [],
-              "commands": [
-                {
-                  "bash_c": "docker compose up -d",
-                  "ignore_fails": false,
-                  "af_placeholder": null,
-                  "replace_af_with": []
-                },
-                {
-                  "bash_c": "docker compose logs",
-                  "ignore_fails": false,
-                  "af_placeholder": null,
-                  "replace_af_with": []
-                }
-              ]
-            }
-          }
-        }
-      ]
+      "arch": "x86_64",
+      "os": "Linux",
+      "derivative": "any",
+      "version": "No"
+    },
+    {
+      "arch": "wasm32",
+      "os": {
+        "Other": "web"
+      },
+      "derivative": "any",
+      "version": "No"
     }
   ],
-  "artifacts": [
-    "c3a-worker/c3a-dbs.json",
-    "c3a-worker/c3a-worker.yaml",
-    "c3a-worker/target/release/c3a-worker",
-    "c3a-frontend/dist"
+  "deploy_toolkit": "docker-compose",
+  "cache_files": [
+    ".git",
+    "Cargo.lock",
+    "target"
   ],
-  "inplace_artifacts_into_project_root": [
+  "pipelines": [],
+  "artifacts": [
+    "c3a-frontend/artifacts/c3a-frontend",
+    "c3a-worker/artifacts/c3a-worker",
+    "c3a-worker/c3a-worker.yaml"
+  ],
+  "variables": [],
+  "place_artifacts_into_project_root": [
     [
-      "c3a-worker/c3a-worker.yaml",
-      "c3a-worker.yaml"
+      "c3a-frontend/artifacts/c3a-frontend",
+      "c3a-frontend"
     ],
     [
       "c3a-worker/artifacts/c3a-worker",
       "c3a-worker"
     ],
     [
-      "c3a-frontend/artifacts/dist",
-      "c3a-frontend"
+      "c3a-worker/c3a-worker.yaml",
+      "c3a-worker.yaml"
     ]
-  ]
+  ],
+  "version": 2
 }

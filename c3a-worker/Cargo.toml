@@ -1,9 +1,14 @@
 [package]
 name = "c3a-worker"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Klimenty Titov <aclo.create@gmail.com>"]
 
 [dependencies]
-cc-server-kit = { git = "https://github.com/markcda/cc-server-kit.git", default-features = false, features = ["http3", "oapi", "utils", "otel"] }
+bb8 = "0.9"
+bb8-redis = "0.20"
+cc-server-kit = { git = "https://github.com/markcda/cc-server-kit.git", tag = "0.2.5", default-features = false, features = ["oapi", "cc-utils", "otel"] }
+cc-static-server = { git = "https://github.com/markcda/cc-static-server.git", tag = "0.2.1" }
+serde = "1.0"
+serde_json = "1.0"
 tokio = { version = "1" }
