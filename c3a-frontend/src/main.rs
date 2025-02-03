@@ -33,7 +33,6 @@ fn App() -> impl IntoView {
 
   view! {
     <Title
-      text=move || t_string!(i18n, title)
       formatter=move |text| format!("{text} - CC Services")
     />
     {move || match get_path().unwrap().as_str() {

@@ -1,5 +1,5 @@
 startup_type: unsafe_http
-server_host: 0.0.0.0
+server_host: 127.0.0.1
 server_port: 8072
 allow_oapi_access: false
 log_level: debug

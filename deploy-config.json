@@ -23,19 +23,83 @@
   "cache_files": [
     ".git",
     "Cargo.lock",
+    "c3a-frontend/Cargo.lock",
+    "c3a-frontend/artifacts",
+    "c3a-frontend/target",
+    "c3a-worker/Cargo.lock",
+    "c3a-worker/artifacts",
+    "c3a-worker/target",
     "target"
   ],
-  "pipelines": [],
+  "pipelines": [
+    {
+      "title": "build",
+      "desc": "",
+      "info": "build-c3a@0.1.0",
+      "tags": [
+        "c3a"
+      ],
+      "actions": [
+        {
+          "title": "Build C3A Frontend",
+          "desc": "Получено из `Build C3A Frontend`.",
+          "info": "build-c3a-frontend@0.1.0",
+          "tags": [
+            "c3a"
+          ],
+          "action": {
+            "Build": {
+              "supported_langs": [],
+              "commands": [
+                {
+                  "bash_c": "cd c3a-frontend && deployer run build-for-c3a-worker",
+                  "ignore_fails": false,
+                  "show_success_output": true,
+                  "show_bash_c": true,
+                  "only_when_fresh": false
+                }
+              ]
+            }
+          },
+          "exec_in_project_dir": false
+        },
+        {
+          "title": "Build C3A Worker",
+          "desc": "",
+          "info": "build-c3a-worker@0.1.0",
+          "tags": [
+            "c3a"
+          ],
+          "action": {
+            "Build": {
+              "supported_langs": [],
+              "commands": [
+                {
+                  "bash_c": "cd c3a-worker && deployer run build",
+                  "ignore_fails": false,
+                  "show_success_output": true,
+                  "show_bash_c": true,
+                  "only_when_fresh": false
+                }
+              ]
+            }
+          },
+          "exec_in_project_dir": false
+        }
+      ],
+      "default": true
+    }
+  ],
   "artifacts": [
-    "c3a-frontend/artifacts/c3a-frontend",
+    "c3a-frontend/artifacts/dist",
     "c3a-worker/artifacts/c3a-worker",
     "c3a-worker/c3a-worker.yaml"
   ],
   "variables": [],
   "place_artifacts_into_project_root": [
     [
-      "c3a-frontend/artifacts/c3a-frontend",
-      "c3a-frontend"
+      "c3a-frontend/artifacts/dist",
+      "dist"
     ],
     [
       "c3a-worker/artifacts/c3a-worker",
@@ -46,5 +110,6 @@
       "c3a-worker.yaml"
     ]
   ],
+  "containered_options": null,
   "version": 2
 }

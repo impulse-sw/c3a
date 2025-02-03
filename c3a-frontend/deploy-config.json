@@ -741,7 +741,7 @@
               ],
               "commands": [
                 {
-                  "bash_c": "cp public/tailwind.css dist/error_pages_tailwind.css",
+                  "bash_c": "cp public/tailwind.css dist/tailwind.css",
                   "ignore_fails": false,
                   "show_success_output": false,
                   "show_bash_c": true,
