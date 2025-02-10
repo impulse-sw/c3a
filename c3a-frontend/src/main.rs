@@ -1,3 +1,5 @@
+mod components;
+
 mod info;
 mod sign_in;
 mod sign_up;

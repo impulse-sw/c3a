@@ -1,0 +1,186 @@
+project_name: c3a-worker
+langs:
+- rust
+targets:
+- arch: x86_64
+  os: Linux
+  os_derivative: any
+  os_version:
+    type: no
+cache_files:
+- .git
+- Cargo.lock
+- target
+pipelines:
+- title: build
+  desc: 'Got from `Default Rust Pipeline`.'
+  info: rust-default@0.1.0
+  tags:
+  - rust
+  - cargo
+  - upx
+  actions:
+  - title: Lint
+    desc: 'Got from `Cargo Clippy`.'
+    info: cargo-clippy@0.1.0
+    tags:
+    - cargo
+    - clippy
+    action:
+      type: pre_build
+      supported_langs:
+      - null
+      commands:
+      - bash_c: cargo clippy
+        ignore_fails: false
+        show_success_output: true
+        show_bash_c: true
+  - title: Build
+    desc: Got from `Cargo Build (Release)`. Build the Rust project with Cargo default settings in release mode
+    info: cargo-rel@0.1
+    tags:
+    - rust
+    - cargo
+    action:
+      type: build
+      supported_langs:
+      - null
+      commands:
+      - bash_c: cargo build --release
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: true
+  - title: Compress
+    desc: Got from `UPX Compress`. Compress the binary file with UPX.
+    info: upx-compress@0.1.0
+    tags:
+    - upx
+    action:
+      type: post_build
+      supported_langs:
+      - any
+      commands:
+      - bash_c: upx <artifact>
+        placeholders:
+        - <artifact>
+        replacements:
+        - group:
+          - from: <artifact>
+            to:
+              title: target/release/c3a-worker
+              is_secret: false
+              value:
+                type: plain
+                value: target/release/c3a-worker
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: false
+  default: true
+- title: deploy
+  desc: 'Got from `Default Rust Pipeline`.'
+  info: rust-default@0.1.0
+  tags:
+  - rust
+  - cargo
+  - upx
+  actions:
+  - title: Lint
+    desc: 'Got from `Cargo Clippy`.'
+    info: cargo-clippy@0.1.0
+    tags:
+    - cargo
+    - clippy
+    action:
+      type: pre_build
+      supported_langs:
+      - null
+      commands:
+      - bash_c: cargo clippy
+        ignore_fails: false
+        show_success_output: true
+        show_bash_c: true
+  - title: Build
+    desc: Got from `Cargo Build (Release)`. Build the Rust project with Cargo default settings in release mode
+    info: cargo-rel@0.1
+    tags:
+    - rust
+    - cargo
+    action:
+      type: build
+      supported_langs:
+      - null
+      commands:
+      - bash_c: cargo build --release
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: true
+  - title: Compress
+    desc: Got from `UPX Compress`. Compress the binary file with UPX.
+    info: upx-compress@0.1.0
+    tags:
+    - upx
+    action:
+      type: post_build
+      supported_langs:
+      - any
+      commands:
+      - bash_c: upx <artifact>
+        placeholders:
+        - <artifact>
+        replacements:
+        - group:
+          - from: <artifact>
+            to:
+              title: target/release/c3a-worker
+              is_secret: false
+              value:
+                type: plain
+                value: target/release/c3a-worker
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: false
+  - title: Start Valkey
+    desc: ''
+    info: valkey-start@0.1.0
+    tags: []
+    action:
+      type: configure_deploy
+      deploy_toolkit: docker
+      commands:
+      - bash_c: sudo docker run --name c3a-valkey -d valkey/valkey -p 19805:6379 -v ./valkey-data:/data valkey-server --save 60 1 --loglevel warning
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: false
+  - title: Start C3A
+    desc: ''
+    info: c3a-start@0.1.0
+    tags: []
+    action:
+      type: observe
+      command:
+        bash_c: ./target/release/c3a-worker
+        ignore_fails: true
+        show_success_output: true
+        show_bash_c: false
+        only_when_fresh: false
+    exec_in_project_dir: false
+  - title: Stop Valkey
+    desc: ''
+    info: valkey-stop@0.1.0
+    tags: []
+    action:
+      type: post_deploy
+      deploy_toolkit: docker
+      commands:
+      - bash_c: sudo docker stop c3a-valkey && sudo docker rm c3a-valkey
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: false
+  default: false
+artifacts:
+- target/release/c3a-worker
+variables: []
+place_artifacts_into_project_root:
+- from: target/release/c3a-worker
+  to: c3a-worker
+version: 4

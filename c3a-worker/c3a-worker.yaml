@@ -1,5 +1,8 @@
 startup_type: unsafe_http
 server_host: 127.0.0.1
-server_port: 8072
+server_port: 19806
 allow_oapi_access: false
-log_level: debug
+log_level: info
+log_file_level: debug
+kv_addr: redis://127.0.0.1:19805
+seaorm_addr: jjjj
