@@ -7,6 +7,7 @@ authors = ["Klimenty Titov <aclo.create@gmail.com>"]
 [dependencies]
 bb8 = "0.9"
 bb8-redis = "0.20"
+c3a-common = { path = "../c3a-common" }
 cc-server-kit = { git = "https://github.com/markcda/cc-server-kit.git", tag = "0.3.0", default-features = false, features = ["oapi", "cc-utils", "otel"] }
 cc-static-server = { git = "https://github.com/markcda/cc-static-server.git", tag = "0.2.4" }
 pqc_dilithium = { version = "0.2.0", features = ["mode5"] }

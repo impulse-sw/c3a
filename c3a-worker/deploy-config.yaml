@@ -147,7 +147,7 @@ pipelines:
       type: configure_deploy
       deploy_toolkit: docker
       commands:
-      - bash_c: sudo docker run --name c3a-valkey -d valkey/valkey -p 19805:6379 -v ./valkey-data:/data valkey-server --save 60 1 --loglevel warning
+      - bash_c: docker run --name c3a-valkey -d valkey/valkey -p 19805:6379 -v ./valkey-data:/data valkey-server --save 60 1 --loglevel warning
         ignore_fails: false
         show_success_output: false
         show_bash_c: false
@@ -172,7 +172,7 @@ pipelines:
       type: post_deploy
       deploy_toolkit: docker
       commands:
-      - bash_c: sudo docker stop c3a-valkey && sudo docker rm c3a-valkey
+      - bash_c: docker stop c3a-valkey && docker rm c3a-valkey
         ignore_fails: false
         show_success_output: false
         show_bash_c: false

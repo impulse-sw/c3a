@@ -1,0 +1,76 @@
+project_name: c3a-common
+langs:
+- null
+targets:
+- arch: x86-64
+  os: null
+  os_derivative: any
+  os_version:
+    type: no
+cache_files:
+- .git
+- Cargo.lock
+- target
+pipelines:
+- title: ops
+  desc: Получено из `Cargo Default Pipeline`.
+  info: cargo-default@0.1.0
+  tags:
+  - rust
+  - cargo
+  actions:
+  - title: Lint
+    desc: Получено из `Cargo Clippy`.
+    info: cargo-clippy@0.1.0
+    tags:
+    - cargo
+    - clippy
+    action:
+      type: pre_build
+      supported_langs:
+      - null
+      commands:
+      - bash_c: cargo clippy
+        ignore_fails: false
+        show_success_output: true
+        show_bash_c: true
+        only_when_fresh: false
+    exec_in_project_dir: false
+  - title: Format
+    desc: Получено из `Format `.rs` files`.
+    info: cargo-fmt@0.1.0
+    tags: []
+    action:
+      type: pre_build
+      supported_langs:
+      - null
+      commands:
+      - bash_c: cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: true
+        only_when_fresh: false
+    exec_in_project_dir: true
+  - title: Build
+    desc: Получено из `Cargo Build (Release)`. Build the Rust project with Cargo default settings in release mode
+    info: cargo-rel@0.1
+    tags:
+    - rust
+    - cargo
+    action:
+      type: build
+      supported_langs:
+      - null
+      commands:
+      - bash_c: cargo build --release
+        ignore_fails: false
+        show_success_output: false
+        show_bash_c: true
+    requirements:
+    - type: exists
+      path: /bin/cargo
+  default: true
+artifacts: []
+variables: []
+place_artifacts_into_project_root: []
+version: 3

@@ -28,6 +28,7 @@ struct Setup {
   generic_values: GenericValues,
   kv_addr: String,
   seaorm_addr: String,
+  private_adm_key: Option<String>,
 }
 
 impl GenericSetup for Setup {
@@ -36,12 +37,11 @@ impl GenericSetup for Setup {
 }
 
 #[tokio::main]
-async fn main() {
-  let keys = pqc_dilithium::Keypair::generate();
-  println!("keys.public.len() = {}", keys.public.len());
-  println!("keys.expose_secret().len() = {}", keys.expose_secret().len());
+async fn main() -> MResult<()> {
+  let mut setup = load_generic_config::<Setup>("c3a-worker").await.unwrap();
+  if setup.private_adm_key.is_some() { panic!("You can't setup private key in `c3a-worker.yaml`!") }
+  setup.private_adm_key = Some(std::env::var("C3A_PRIVATE_ADM_KEY")?);
   
-  let setup = load_generic_config::<Setup>("c3a-worker").await.unwrap();
   let state = load_generic_state(&setup).await.unwrap();
   let kv_db = connect_redis(&setup.kv_addr).await.unwrap();
   let router = get_root_router(&state)
@@ -49,5 +49,6 @@ async fn main() {
     .push(frontend_router());
   let (server, _) = start(state, &setup, router).await.unwrap();
   
-  server.await
+  server.await;
+  Ok(())
 }
