@@ -4,4 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+pqc_dilithium = { optional = true, version = "0.2.0", features = ["mode5"] }
 serde = { version = "1.0", features = ["derive"] }
+
+[features]
+default = ["worker-types", "app-server-types", "app-client-types", "pqc-utils"]
+worker-types = []
+app-server-types = []
+app-client-types = []
+pqc-utils = ["dep:pqc_dilithium"]

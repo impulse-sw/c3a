@@ -3,7 +3,7 @@ use cc_static_server::frontend_router;
 use serde::Deserialize;
 use salvo::affix_state;
 
-mod auth;
+mod application_server_api;
 mod services;
 
 pub(crate) type TokensDbPool = bb8::Pool<bb8_redis::RedisConnectionManager>;

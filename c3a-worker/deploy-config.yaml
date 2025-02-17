@@ -29,7 +29,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: cargo clippy
         ignore_fails: false
@@ -44,7 +44,7 @@ pipelines:
     action:
       type: build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: cargo build --release
         ignore_fails: false
@@ -93,7 +93,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: cargo clippy
         ignore_fails: false
@@ -108,7 +108,7 @@ pipelines:
     action:
       type: build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: cargo build --release
         ignore_fails: false
