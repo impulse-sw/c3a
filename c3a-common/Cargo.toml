@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-pqc_dilithium = { optional = true, version = "0.2.0", features = ["mode5"] }
+pqc_dilithium = { optional = true, git = "https://github.com/markcda/pqc_dilithium.git", features = ["mode5"] }
 serde = { version = "1.0", features = ["derive"] }
 
 [features]

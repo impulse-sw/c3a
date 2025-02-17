@@ -2,6 +2,10 @@ pub fn generate_dilithium_keypair() -> pqc_dilithium::Keypair {
   pqc_dilithium::Keypair::generate()
 }
 
+pub fn restore_from(public: &[u8], secret: &[u8]) -> Result<pqc_dilithium::Keypair, pqc_dilithium::RestoreError> {
+  pqc_dilithium::Keypair::restore(public, secret)
+}
+
 pub fn sign(data: &[u8], keypair: &pqc_dilithium::Keypair) -> Vec<u8> {
   keypair.sign(data).to_vec()
 }
