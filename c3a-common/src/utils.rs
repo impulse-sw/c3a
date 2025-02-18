@@ -1,3 +1,5 @@
+use crate::types::{MPAATHeader, MPAATPayload};
+
 pub fn generate_dilithium_keypair() -> pqc_dilithium::Keypair {
   pqc_dilithium::Keypair::generate()
 }
@@ -44,4 +46,8 @@ pub fn decrypt_chacha20poly1305<T: serde::de::DeserializeOwned>(ciphertext: &[u8
   let plaintext = cipher.decrypt(nonce, ciphertext).map_err(|_| DecryptError::Decrypt)?;
   let deserialized = rmp_serde::from_slice::<T>(plaintext.as_slice()).map_err(|_| DecryptError::Deserialize)?;
   Ok(deserialized)
+}
+
+pub fn deploy_mpaat<T>(header: &MPAATHeader, payload: &MPAATPayload<T>) -> String {
+  
 }
