@@ -1,6 +1,6 @@
 project_name: c3a-frontend
 langs:
-- null
+- rust
 targets:
 - arch: wasm32
   os: web
@@ -33,7 +33,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: leptosfmt -t 2 ./**/*.rs
         ignore_fails: false
@@ -54,7 +54,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: cargo fmt
         ignore_fails: false
@@ -92,7 +92,7 @@ pipelines:
     action:
       type: build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: trunk build --release
         ignore_fails: false
@@ -112,7 +112,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: wasm-opt -Oz -o {file} {file}
         placeholders:
@@ -141,7 +141,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - any
       commands:
       - bash_c: cp public/tailwind.css dist/error_pages_tailwind.css
         ignore_fails: false
@@ -156,7 +156,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - any
       commands:
       - bash_c: cp public/favicon.ico dist/
         ignore_fails: false
@@ -215,7 +215,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: leptosfmt -t 2 ./**/*.rs
         ignore_fails: false
@@ -236,7 +236,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: cargo fmt
         ignore_fails: false
@@ -254,7 +254,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - CSS
+      - css
       commands:
       - bash_c: tailwindcss -i ./input.css -o ./public/tailwind.css --minify
         ignore_fails: false
@@ -274,7 +274,7 @@ pipelines:
     action:
       type: build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: trunk build --release
         ignore_fails: false
@@ -294,7 +294,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: wasm-opt -Oz -o {file} {file}
         placeholders:
@@ -323,7 +323,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - any
       commands:
       - bash_c: cp public/tailwind.css dist/error_pages_tailwind.css
         ignore_fails: false
@@ -338,7 +338,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - any
       commands:
       - bash_c: cp public/favicon.ico dist/
         ignore_fails: false
@@ -384,7 +384,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: leptosfmt -t 2 ./**/*.rs
         ignore_fails: false
@@ -405,7 +405,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: cargo fmt
         ignore_fails: false
@@ -423,7 +423,7 @@ pipelines:
     action:
       type: pre_build
       supported_langs:
-      - CSS
+      - css
       commands:
       - bash_c: tailwindcss -i ./input.css -o ./public/tailwind.css --minify
         ignore_fails: false
@@ -443,7 +443,7 @@ pipelines:
     action:
       type: build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: trunk build --release
         ignore_fails: false
@@ -463,7 +463,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - rust
       commands:
       - bash_c: wasm-opt -Oz -o {file} {file}
         placeholders:
@@ -492,7 +492,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - any
       commands:
       - bash_c: cp public/tailwind.css dist/tailwind.css
         ignore_fails: false
@@ -507,7 +507,7 @@ pipelines:
     action:
       type: post_build
       supported_langs:
-      - null
+      - any
       commands:
       - bash_c: cp public/favicon.ico dist/
         ignore_fails: false
