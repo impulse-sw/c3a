@@ -36,15 +36,18 @@ pub struct RegisteredAnswer {
 
 /// MessagePack-based Application Authority Token
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
-pub struct MPAAT<T> {
-  pub header: MPAATHeader,
+pub struct MPAAT<U, T> {
+  pub header: MPAATHeader<U>,
   pub payload: MPAATPayload<T>,
   pub signature: MPAATSignature,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
-pub struct MPAATHeader {
+pub struct MPAATHeader<U> {
   pub sdpub: Vec<u8>,
+  pub nonce: Vec<u8>,
+  #[serde(flatten)]
+  pub common_public_fields: Option<U>,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]

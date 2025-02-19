@@ -1,4 +1,4 @@
-use crate::types::{MPAATHeader, MPAATPayload};
+use crate::types::{MPAATHeader, MPAATPayload, MPAATSignature};
 
 pub fn generate_dilithium_keypair() -> pqc_dilithium::Keypair {
   pqc_dilithium::Keypair::generate()
@@ -48,6 +48,29 @@ pub fn decrypt_chacha20poly1305<T: serde::de::DeserializeOwned>(ciphertext: &[u8
   Ok(deserialized)
 }
 
-pub fn deploy_mpaat<T>(header: &MPAATHeader, payload: &MPAATPayload<T>) -> String {
+pub enum DeployError {
+  Serialize,
+}
+
+pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
+  payload: T,
+  common_fields: Option<U>,
+  client_public: &[u8],
+  server_enc: &[u8],
+  server_keys: &pqc_dilithium::Keypair,
+) -> Result<String, DeployError> {
+  use base64::{engine::general_purpose::{STANDARD, URL_SAFE}, Engine as _};
   
+  let payload = MPAATPayload { cdpub: client_public.to_vec(), container: payload };
+  let (payload, nonce) = encrypt_chacha20poly1305(&payload, server_enc).map_err(|_| DeployError::Serialize)?;
+  
+  let sig = MPAATSignature { sig: sign(&payload, server_keys) };
+  let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(|_| DeployError::Serialize)?);
+  
+  let payload = URL_SAFE.encode(&payload);
+  
+  let header = MPAATHeader { sdpub: server_keys.public.to_vec(), nonce, common_public_fields: common_fields };
+  let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(|_| DeployError::Serialize)?);
+  
+  Ok(format!("{}.{}.{}", payload, sig, header))
 }
