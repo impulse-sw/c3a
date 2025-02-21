@@ -50,6 +50,7 @@ pub fn decrypt_chacha20poly1305<T: serde::de::DeserializeOwned>(ciphertext: &[u8
 
 pub enum DeployError {
   Serialize,
+  Encrypt(EncryptError),
 }
 
 pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
@@ -60,17 +61,59 @@ pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
   server_keys: &pqc_dilithium::Keypair,
 ) -> Result<String, DeployError> {
   use base64::{engine::general_purpose::{STANDARD, URL_SAFE}, Engine as _};
-  
+
   let payload = MPAATPayload { cdpub: client_public.to_vec(), container: payload };
-  let (payload, nonce) = encrypt_chacha20poly1305(&payload, server_enc).map_err(|_| DeployError::Serialize)?;
-  
+  let (payload, nonce) = encrypt_chacha20poly1305(&payload, server_enc).map_err(|e| DeployError::Encrypt(e))?;
+
   let sig = MPAATSignature { sig: sign(&payload, server_keys) };
   let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(|_| DeployError::Serialize)?);
-  
+
   let payload = URL_SAFE.encode(&payload);
-  
+
   let header = MPAATHeader { sdpub: server_keys.public.to_vec(), nonce, common_public_fields: common_fields };
   let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(|_| DeployError::Serialize)?);
-  
+
   Ok(format!("{}.{}.{}", payload, sig, header))
+}
+
+pub enum ExtractError {
+  InvalidToken,
+  Decode,
+  Deserialize,
+  Decrypt(DecryptError),
+  InvalidSignature,
+  InvalidServerPublicKey,
+}
+
+pub fn extract_common_fields<U: serde::de::DeserializeOwned>(token: &str) -> Result<Option<U>, ExtractError> {
+  use base64::{engine::general_purpose::STANDARD, Engine as _};
+
+  let header = token.split('.').nth(2).ok_or(ExtractError::InvalidToken)?;
+  let header = STANDARD.decode(header).map_err(|_| ExtractError::Decode)?;
+  let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(|_| ExtractError::Deserialize)?;
+  Ok(header.common_public_fields)
+}
+
+pub fn extract_payload<T: serde::de::DeserializeOwned>(token: &str, server_enc: &[u8], server_keys: &pqc_dilithium::Keypair) -> Result<T, ExtractError> {
+  use base64::{engine::general_purpose::{STANDARD, URL_SAFE}, Engine as _};
+
+  let parts = token.split('.').collect::<Vec<_>>();
+
+  let payload = parts.get(0).ok_or(ExtractError::InvalidToken)?;
+  let payload = URL_SAFE.decode(payload).map_err(|_| ExtractError::Decode)?;
+
+  let sig = parts.get(1).ok_or(ExtractError::InvalidToken)?;
+  let sig = STANDARD.decode(sig).map_err(|_| ExtractError::Decode)?;
+  let sig = rmp_serde::from_slice::<MPAATSignature>(&sig).map_err(|_| ExtractError::Deserialize)?;
+
+  if !verify(&payload, &sig.sig, &server_keys.public) { return Err(ExtractError::InvalidSignature) }
+
+  let header = parts.get(2).ok_or(ExtractError::InvalidToken)?;
+  let header = STANDARD.decode(header).map_err(|_| ExtractError::Decode)?;
+  let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(|_| ExtractError::Deserialize)?;
+
+  if header.sdpub != server_keys.public { return Err(ExtractError::InvalidServerPublicKey); }
+
+  let payload = decrypt_chacha20poly1305::<MPAATPayload<T>>(&payload, &header.nonce, server_enc).map_err(|e| ExtractError::Decrypt(e))?;
+  Ok(payload.container)
 }
