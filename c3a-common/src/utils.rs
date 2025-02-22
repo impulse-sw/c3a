@@ -16,6 +16,15 @@ pub fn verify(data: &[u8], sign: &[u8], public_key: &[u8]) -> bool {
   pqc_dilithium::verify(sign, data, public_key).is_ok()
 }
 
+pub fn generate_chacha20poly1305_key<const SZ: usize>() -> [u8; SZ] {
+  use rand::Rng;
+  
+  let mut arr: [u8; SZ] = [0; SZ];
+  let mut rng = rand::thread_rng();
+  rng.fill(arr.as_mut_slice());
+  arr
+}
+
 pub enum EncryptError {
   Serialize,
   Encrypt,
@@ -56,6 +65,7 @@ pub enum DeployError {
 pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
   payload: T,
   common_fields: Option<U>,
+  exp: chrono::DateTime<chrono::Utc>,
   client_public: &[u8],
   server_enc: &[u8],
   server_keys: &pqc_dilithium::Keypair,
@@ -70,19 +80,20 @@ pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
 
   let payload = URL_SAFE.encode(&payload);
 
-  let header = MPAATHeader { sdpub: server_keys.public.to_vec(), nonce, common_public_fields: common_fields };
+  let header = MPAATHeader { sdpub: server_keys.public.to_vec(), exp, nonce, common_public_fields: common_fields };
   let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(|_| DeployError::Serialize)?);
 
   Ok(format!("{}.{}.{}", payload, sig, header))
 }
 
 pub enum ExtractError {
-  InvalidToken,
   Decode,
   Deserialize,
   Decrypt(DecryptError),
+  InvalidToken,
   InvalidSignature,
   InvalidServerPublicKey,
+  Expired,
 }
 
 pub fn extract_common_fields<U: serde::de::DeserializeOwned>(token: &str) -> Result<Option<U>, ExtractError> {
@@ -94,7 +105,16 @@ pub fn extract_common_fields<U: serde::de::DeserializeOwned>(token: &str) -> Res
   Ok(header.common_public_fields)
 }
 
-pub fn extract_payload<T: serde::de::DeserializeOwned>(token: &str, server_enc: &[u8], server_keys: &pqc_dilithium::Keypair) -> Result<T, ExtractError> {
+pub fn extract_payload<T, U>(
+  token: &str,
+  server_enc: &[u8],
+  server_keys: &pqc_dilithium::Keypair,
+  current_dt: chrono::DateTime<chrono::Utc>,
+) -> Result<T, ExtractError>
+  where
+    T: serde::de::DeserializeOwned,
+    U: serde::de::DeserializeOwned,
+{
   use base64::{engine::general_purpose::{STANDARD, URL_SAFE}, Engine as _};
 
   let parts = token.split('.').collect::<Vec<_>>();
@@ -112,7 +132,8 @@ pub fn extract_payload<T: serde::de::DeserializeOwned>(token: &str, server_enc: 
   let header = STANDARD.decode(header).map_err(|_| ExtractError::Decode)?;
   let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(|_| ExtractError::Deserialize)?;
 
-  if header.sdpub != server_keys.public { return Err(ExtractError::InvalidServerPublicKey); }
+  if header.sdpub != server_keys.public { return Err(ExtractError::InvalidServerPublicKey) }
+  if current_dt >= header.exp { return Err(ExtractError::Expired) }
 
   let payload = decrypt_chacha20poly1305::<MPAATPayload<T>>(&payload, &header.nonce, server_enc).map_err(|e| ExtractError::Decrypt(e))?;
   Ok(payload.container)

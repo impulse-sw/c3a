@@ -46,6 +46,7 @@ pub struct MPAAT<U, T> {
 pub struct MPAATHeader<U> {
   pub sdpub: Vec<u8>,
   pub nonce: Vec<u8>,
+  pub exp: chrono::DateTime<chrono::Utc>,
   #[serde(flatten)]
   pub common_public_fields: Option<U>,
 }
