@@ -1,74 +1,171 @@
 project_name: c3a
+version: 4
 langs:
-- rust
+  - rust
 targets:
-- arch: x86_64
-  os: Linux
-  os_derivative: any
-  os_version:
-    type: no
-- arch: wasm32
-  os: web
-  os_derivative: any
-  os_version:
-    type: no
+  - arch: x86_64
+    os: Linux
+    os_derivative: any
+    os_version:
+      type: no
+  - arch: wasm32
+    os: web
+    os_derivative: any
+    os_version:
+      type: no
 deploy_toolkit: docker-compose
 cache_files:
-- .git
-- Cargo.lock
-- c3a-frontend/Cargo.lock
-- c3a-frontend/artifacts
-- c3a-frontend/target
-- c3a-worker/Cargo.lock
-- c3a-worker/artifacts
-- c3a-worker/target
-- target
-pipelines:
-- title: build
-  desc: ''
-  info: build-c3a@0.1.0
-  tags:
-  - c3a
-  actions:
-  - title: Build C3A Frontend
-    desc: Получено из `Build C3A Frontend`.
-    info: build-c3a-frontend@0.1.0
-    tags:
-    - c3a
-    action:
-      type: observe
-      command:
-        bash_c: cd c3a-frontend && deployer run build-for-c3a-worker -j
-        ignore_fails: false
-        show_success_output: true
-        show_bash_c: true
-        only_when_fresh: false
-    exec_in_project_dir: false
-  - title: Build C3A Worker
-    desc: ''
-    info: build-c3a-worker@0.1.0
-    tags:
-    - c3a
-    action:
-      type: observe
-      command:
-        bash_c: cd c3a-worker && deployer run build -j
-        ignore_fails: false
-        show_success_output: true
-        show_bash_c: true
-        only_when_fresh: false
-    exec_in_project_dir: false
-  default: true
+  - .git
+  - Cargo.lock
+  - c3a-client/Cargo.lock
+  - c3a-client/target
+  - c3a-common/Cargo.lock
+  - c3a-common/target
+  - c3a-frontend/Cargo.lock
+  - c3a-frontend/artifacts
+  - c3a-frontend/target
+  - c3a-worker/Cargo.lock
+  - c3a-worker/artifacts
+  - c3a-worker/target
+  - target
 artifacts:
-- c3a-frontend/artifacts/dist
-- c3a-worker/artifacts/c3a-worker
-- c3a-worker/c3a-worker.yaml
-variables: []
+  - c3a-frontend/artifacts/dist
+  - c3a-worker/artifacts/c3a-worker
+  - c3a-worker/c3a-worker.yaml
+variables:
+  - title: C3A Private Admin Key
+    is_secret: true
+    value:
+      type: from_env_file
+      env_file_path: .env
+      key: C3A_PRIVATE_ADM_KEY
 place_artifacts_into_project_root:
-- from: c3a-frontend/artifacts/dist
-  to: dist
-- from: c3a-worker/artifacts/c3a-worker
-  to: c3a-worker
-- from: c3a-worker/c3a-worker.yaml
-  to: c3a-worker.yaml
-version: 4
+  - from: c3a-frontend/artifacts/dist
+    to: dist
+  - from: c3a-worker/artifacts/c3a-worker
+    to: c3a-worker
+  - from: c3a-worker/c3a-worker.yaml
+    to: c3a-worker.yaml
+pipelines:
+  - title: build
+    desc: ""
+    info: build-c3a@0.1.0
+    tags:
+      - c3a
+    default: true
+    actions:
+      - title: Build C3A Worker
+        desc: ""
+        info: build-c3a-worker@0.1.0
+        tags:
+          - c3a
+        exec_in_project_dir: false
+        action:
+          type: observe
+          command:
+            bash_c: cd c3a-worker && deployer run build -j
+            ignore_fails: false
+            show_success_output: true
+            show_bash_c: true
+            only_when_fresh: false
+      - title: Build C3A Frontend
+        desc: Получено из `Build C3A Frontend`.
+        info: build-c3a-frontend@0.1.0
+        tags:
+          - c3a
+        exec_in_project_dir: false
+        action:
+          type: observe
+          command:
+            bash_c: cd c3a-frontend && deployer run build-for-c3a-worker -j
+            ignore_fails: false
+            show_success_output: true
+            show_bash_c: true
+            only_when_fresh: false
+  - title: start
+    desc: ""
+    info: c3a-run@0.1.0
+    tags: []
+    actions:
+      - title: Build
+        desc: Получено из `Build C3A`.
+        info: c3a-build@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: sub_pipeline
+          title: Build
+          desc: Получено из `build`.
+          info: build-c3a@0.1.0
+          tags:
+            - c3a
+          default: true
+          actions:
+            - title: Build C3A Worker
+              desc: ""
+              info: build-c3a-worker@0.1.0
+              tags:
+                - c3a
+              exec_in_project_dir: false
+              action:
+                type: observe
+                command:
+                  bash_c: cd c3a-worker && deployer run build -j
+                  ignore_fails: false
+                  show_success_output: true
+                  show_bash_c: true
+                  only_when_fresh: false
+            - title: Build C3A Frontend
+              desc: Получено из `Build C3A Frontend`.
+              info: build-c3a-frontend@0.1.0
+              tags:
+                - c3a
+              exec_in_project_dir: false
+              action:
+                type: observe
+                command:
+                  bash_c: cd c3a-frontend && deployer run build-for-c3a-worker -j
+                  ignore_fails: false
+                  show_success_output: true
+                  show_bash_c: true
+                  only_when_fresh: false
+      - title: Copy `c3a-worker.yaml`
+        desc: ""
+        info: c3a-copy-config@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: configure_deploy
+          deploy_toolkit: null
+          commands:
+            - bash_c: cp c3a-worker/c3a-worker.yaml .
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+              daemon: false
+      - title: Start
+        desc: Получено из `Start C3A`.
+        info: c3a-start@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: observe
+          command:
+            bash_c: C3A_PRIVATE_ADM_KEY=<KEY> ./c3a-worker/artifacts/c3a-worker
+            ignore_fails: true
+            show_success_output: true
+            show_bash_c: false
+            only_when_fresh: false
+            placeholders:
+              - <KEY>
+            replacements:
+              - group:
+                  - from: <KEY>
+                    to:
+                      title: C3A Private Admin Key
+                      is_secret: true
+                      value:
+                        type: from_env_file
+                        env_file_path: c3a-worker/.env
+                        key: C3A_PRIVATE_ADM_KEY

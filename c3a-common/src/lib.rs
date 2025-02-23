@@ -1,7 +1,10 @@
 mod types;
+pub use types::*;
 
-#[cfg(feature = "pqc-utils")]
 mod utils;
+pub use utils::*;
 
 #[cfg(feature = "pqc-utils")]
-pub use utils::*;
+pub use pqc_dilithium::Keypair;
+
+pub const SIGN_HEADER: &str = "C3A-Sign";

@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 base64 = "0.22"
+cc-server-kit = { optional = true, git = "https://github.com/markcda/cc-server-kit.git", tag = "0.3.3", default-features = false, features = ["oapi"] }
 chacha20poly1305 = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
 pqc_dilithium = { optional = true, git = "https://github.com/markcda/pqc_dilithium.git", features = [
@@ -13,11 +14,13 @@ pqc_dilithium = { optional = true, git = "https://github.com/markcda/pqc_dilithi
 rand = "0.8.5"
 rand_chacha = "0.3"
 rmp-serde = "1.3"
+salvo = { optional = true, version = "0.76.2", default-features = false, features = ["oapi"] }
 serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
 
 [features]
-default = ["worker-types", "app-server-types", "app-client-types", "pqc-utils"]
-worker-types = []
-app-server-types = []
+default = ["c3a-worker-types", "app-server-types", "app-client-types", "pqc-utils"]
+c3a-worker-types = ["dep:cc-server-kit", "dep:salvo"]
+app-server-types = ["dep:cc-server-kit", "dep:salvo"]
 app-client-types = []
 pqc-utils = ["dep:pqc_dilithium"]
