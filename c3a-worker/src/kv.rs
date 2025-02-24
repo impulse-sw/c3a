@@ -30,8 +30,8 @@ impl KvDb {
   
   pub(crate) const INVITES: &str = "invites";
   
-  pub(crate) const APPLICATION_PREFIX: &str = "app::{app_name}";
-  pub(crate) const USER_PREFIX: &str = "user::{user_name}";
+  pub(crate) const APPLICATION_PREFIX: &str = "app::";
+  pub(crate) const USER_PREFIX: &str = "user::";
   
   pub(crate) fn load(partition_name: &str) -> MResult<Self> {
     let keyspace = fjall::Config::default().open().map_err(|e| ErrorResponse::from(e.to_string()).with_500_pub().build())?;
@@ -57,6 +57,14 @@ impl KvDb {
     }
     
     Ok(())
+  }
+  
+  pub(crate) fn app(app_name: &str) -> String {
+    format!("{}{}", Self::APPLICATION_PREFIX, app_name)
+  }
+  
+  pub(crate) fn user(user_name: &str) -> String {
+    format!("{}{}", Self::USER_PREFIX, user_name)
   }
   
   pub(crate) async fn get_dilithium_keypair(&self) -> MResult<c3a_common::Keypair> {
@@ -101,6 +109,26 @@ impl KvDb {
     let _key = key.to_string();
     
     tokio::task::spawn_blocking(move || {
+      if state.db.contains_key(&_key).map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())? {
+        return Err(ErrorResponse::from("Key already exists!").with_400().build())
+      }
+      state.db.insert(&_key, vec).map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?;
+      state.keyspace.persist(PersistMode::SyncAll).map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())
+    })
+    .await
+    .map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())??;
+    
+    tracing::trace!("fjall: inserted value by path `{}`", key);
+    
+    Ok(())
+  }
+  
+  pub(crate) async fn upsert<T: Serialize>(&self, key: &str, value: &T) -> MResult<()> {
+    let vec = rmp_serde::to_vec(value).map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?;
+    let state = self.clone();
+    let _key = key.to_string();
+    
+    tokio::task::spawn_blocking(move || {
       state.db.insert(&_key, vec)?;
       state.keyspace.persist(PersistMode::SyncAll)
     })
@@ -108,7 +136,7 @@ impl KvDb {
     .map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?
     .map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?;
     
-    tracing::trace!("fjall: inserted value by path `{}`", key);
+    tracing::trace!("fjall: upserted value by path `{}`", key);
     
     Ok(())
   }
@@ -154,14 +182,14 @@ impl KvDb {
     Ok(Some(value))
   }
   
-  pub(crate) async fn batch_ops(&self, insert: Vec<(String, PreConverted)>, remove: Vec<String>) -> MResult<()> {
+  pub(crate) async fn batch_ops(&self, upsert: Vec<(String, PreConverted)>, remove: Vec<String>) -> MResult<()> {
     let state = self.clone();
     
     tokio::task::spawn_blocking(move || {
       let mut batch = state.keyspace.batch();
 
       for key in remove { batch.remove(&state.db, key.clone()); }
-      for (key, value) in insert { batch.insert(&state.db, key.clone(), value.as_ref()); }
+      for (key, value) in upsert { batch.insert(&state.db, key.clone(), value.as_ref()); }
 
       batch.commit()?;
       state.keyspace.persist(PersistMode::SyncAll)
