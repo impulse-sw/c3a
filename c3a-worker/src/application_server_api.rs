@@ -54,7 +54,12 @@ async fn generate_invitation(req: &mut Request, depot: &mut Depot) -> MResult<Ms
 /// To register your service, you should have service backend to send this options once on start.
 #[endpoint(
   tags("maintenance"),
-  responses((status_code = 200, description = "Service availability check result", body = RegisteredAnswer, content_type = ["application/msgpack"]))
+  responses((
+    status_code = 200,
+    description = "Service availability check result",
+    body = RegisterAppAuthConfigurationResponse,
+    content_type = ["application/msgpack"]
+  ))
 )]
 #[instrument(skip_all, fields(http.uri = req.uri().path(), http.method = req.method().as_str()))]
 async fn service_register(req: &mut Request, res: &mut Response, depot: &mut Depot) -> MResult<MsgPack<RegisterAppAuthConfigurationResponse>> {
