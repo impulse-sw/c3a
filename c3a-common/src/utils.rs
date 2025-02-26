@@ -25,6 +25,17 @@ pub fn sign<T: serde::Serialize>(data: &T, keypair: &pqc_dilithium::Keypair) -> 
 }
 
 #[cfg(feature = "pqc-utils")]
+pub fn sign_token<U, T>(header: &MPAATHeader<U>, payload: &MPAATPayload<T>, keypair: &pqc_dilithium::Keypair) -> Result<Vec<u8>, SignError>
+  where
+    U: serde::Serialize,
+    T: serde::Serialize,
+{
+  let mut data = rmp_serde::to_vec(header).map_err(|e| SignError::Serialize(e))?;
+  data.extend_from_slice(&rmp_serde::to_vec(payload).map_err(|e| SignError::Serialize(e))?);
+  Ok(keypair.sign(&data).to_vec())
+}
+
+#[cfg(feature = "pqc-utils")]
 #[derive(Error, Debug)]
 pub enum VerifyError {
   #[error("Serialize error")]
@@ -34,6 +45,13 @@ pub enum VerifyError {
 #[cfg(feature = "pqc-utils")]
 pub fn verify<T: serde::Serialize>(data: &T, sign: &[u8], public_key: &[u8]) -> Result<bool, VerifyError> {
   let data = rmp_serde::to_vec(data).map_err(|e| VerifyError::Serialize(e))?;
+  Ok(pqc_dilithium::verify(sign, &data, public_key).is_ok())
+}
+
+#[cfg(feature = "pqc-utils")]
+pub fn verify_token(header: &[u8], payload: &[u8], sign: &[u8], public_key: &[u8]) -> Result<bool, VerifyError> {
+  let mut data = header.to_vec();
+  data.extend_from_slice(payload);
   Ok(pqc_dilithium::verify(sign, &data, public_key).is_ok())
 }
 
@@ -120,23 +138,28 @@ pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
   common_fields: Option<U>,
   exp: chrono::DateTime<chrono::Utc>,
   client_public: &[u8],
-  server_enc: &[u8],
+  server_enc: Option<&[u8]>,
   server_keys: &pqc_dilithium::Keypair,
 ) -> Result<String, DeployError> {
   use base64::{engine::general_purpose::{STANDARD, URL_SAFE}, Engine as _};
 
   let payload = MPAATPayload { cdpub: client_public.to_vec(), exp, container: payload };
-  let (payload, nonce) = encrypt_chacha20poly1305(&payload, server_enc).map_err(|e| DeployError::Encrypt(e))?;
+  let (enc_payload, nonce) = if let Some(server_enc) = server_enc {
+    encrypt_chacha20poly1305(&payload, server_enc).map_err(|e| DeployError::Encrypt(e))?
+  } else {
+    (rmp_serde::to_vec(&payload).map_err(|e| EncryptError::Serialize(e))?, vec![])
+  };
 
-  let sig = MPAATSignature { sig: sign(&payload, server_keys).map_err(|e| DeployError::Sign(e))? };
-  let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(|e| DeployError::Serialize(e))?);
-
-  let payload = URL_SAFE.encode(&payload);
+  let enc_payload = URL_SAFE.encode(&enc_payload);
 
   let header = MPAATHeader { sdpub: server_keys.public.to_vec(), nonce, common_public_fields: common_fields };
+  
+  let sig = MPAATSignature { sig: sign_token(&header, &payload, server_keys).map_err(|e| DeployError::Sign(e))? };
+  let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(|e| DeployError::Serialize(e))?);
+  
   let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(|e| DeployError::Serialize(e))?);
 
-  Ok(format!("{}.{}.{}", payload, sig, header))
+  Ok(format!("{}.{}.{}", enc_payload, sig, header))
 }
 
 #[cfg(feature = "pqc-utils")]
@@ -160,19 +183,25 @@ pub enum ExtractError {
   Expired,
 }
 
-pub fn extract_common_fields<U: serde::de::DeserializeOwned>(token: &str) -> Result<Option<U>, ExtractError> {
+pub fn extract_common_fields<U: serde::de::DeserializeOwned>(
+  token: &str,
+  server_keys: &pqc_dilithium::Keypair,
+) -> Result<Option<U>, ExtractError> {
   use base64::{engine::general_purpose::STANDARD, Engine as _};
 
   let header = token.split('.').nth(2).ok_or(ExtractError::InvalidToken)?;
   let header = STANDARD.decode(header).map_err(|e| ExtractError::Decode(e))?;
   let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(|e| ExtractError::Deserialize(e))?;
+  
+  if header.sdpub != server_keys.public { return Err(ExtractError::InvalidServerPublicKey) }
+  
   Ok(header.common_public_fields)
 }
 
 #[cfg(feature = "pqc-utils")]
 pub fn extract_payload<T, U>(
   token: &str,
-  server_enc: &[u8],
+  server_enc: Option<&[u8]>,
   server_keys: &pqc_dilithium::Keypair,
   current_dt: chrono::DateTime<chrono::Utc>,
 ) -> Result<T, ExtractError>
@@ -183,26 +212,29 @@ pub fn extract_payload<T, U>(
   use base64::{engine::general_purpose::{STANDARD, URL_SAFE}, Engine as _};
 
   let parts = token.split('.').collect::<Vec<_>>();
-
-  let payload = parts.get(0).ok_or(ExtractError::InvalidToken)?;
-  let payload = URL_SAFE.decode(payload).map_err(|e| ExtractError::Decode(e))?;
-
+  
   let sig = parts.get(1).ok_or(ExtractError::InvalidToken)?;
   let sig = STANDARD.decode(sig).map_err(|e| ExtractError::Decode(e))?;
   let sig = rmp_serde::from_slice::<MPAATSignature>(&sig).map_err(|e| ExtractError::Deserialize(e))?;
 
-  if !verify(&payload, &sig.sig, &server_keys.public).map_err(|e| ExtractError::Verify(e))? {
-    return Err(ExtractError::InvalidSignature)
-  }
-
+  let payload = parts.get(0).ok_or(ExtractError::InvalidToken)?;
+  let payload = URL_SAFE.decode(payload).map_err(|e| ExtractError::Decode(e))?;
+  
   let header = parts.get(2).ok_or(ExtractError::InvalidToken)?;
   let header = STANDARD.decode(header).map_err(|e| ExtractError::Decode(e))?;
+  
+  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(|e| ExtractError::Verify(e))? {
+    return Err(ExtractError::InvalidSignature)
+  }
+  
   let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(|e| ExtractError::Deserialize(e))?;
-
   if header.sdpub != server_keys.public { return Err(ExtractError::InvalidServerPublicKey) }
 
-  let payload = decrypt_chacha20poly1305::<MPAATPayload<T>>(&payload, &header.nonce, server_enc)
-    .map_err(|e| ExtractError::Decrypt(e))?;
+  let payload = if let Some(server_enc) = server_enc {
+    decrypt_chacha20poly1305::<MPAATPayload<T>>(&payload, &header.nonce, server_enc).map_err(|e| ExtractError::Decrypt(e))?
+  } else {
+    rmp_serde::from_slice::<MPAATPayload<T>>(&payload).map_err(|e| ExtractError::Deserialize(e))?
+  };
   
   if current_dt >= payload.exp { return Err(ExtractError::Expired) }
   

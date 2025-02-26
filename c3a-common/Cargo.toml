@@ -8,9 +8,7 @@ base64 = "0.22"
 cc-server-kit = { optional = true, git = "https://github.com/markcda/cc-server-kit.git", tag = "0.3.3", default-features = false, features = ["oapi"] }
 chacha20poly1305 = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
-pqc_dilithium = { optional = true, git = "https://github.com/markcda/pqc_dilithium.git", features = [
-  "mode5",
-] }
+pqc_dilithium = { optional = true, git = "https://github.com/markcda/pqc_dilithium.git", features = ["mode5"] }
 rand = "0.8.5"
 rand_chacha = "0.3"
 rmp-serde = "1.3"
