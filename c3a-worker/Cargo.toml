@@ -6,10 +6,11 @@ authors = ["Klimenty Titov <aclo.create@gmail.com>"]
 
 [dependencies]
 c3a-common = { path = "../c3a-common", default-features = false, features = ["c3a-worker-types", "pqc-utils"] }
-cc-server-kit = { git = "https://github.com/markcda/cc-server-kit.git", tag = "0.3.3", default-features = false, features = [
+cc-server-kit = { git = "https://github.com/markcda/cc-server-kit.git", tag = "0.3.5", default-features = false, features = [
   "oapi",
   "cc-utils",
   "otel",
+  "test",
 ] }
 cc-static-server = { git = "https://github.com/markcda/cc-static-server.git", tag = "0.2.7" }
 fjall = "2.6.5"

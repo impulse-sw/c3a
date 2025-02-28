@@ -34,9 +34,7 @@ fn App() -> impl IntoView {
   let i18n = use_i18n();
 
   view! {
-    <Title
-      formatter=move |text| format!("{text} - CC Services")
-    />
+    <Title formatter=move |text| format!("{text} - CC Services") />
     {move || match get_path().unwrap().as_str() {
       "/sign-up" => view! { <SignUpPage /> }.into_any(),
       "/sign-in" => view! { <SignInPage /> }.into_any(),

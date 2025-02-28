@@ -65,7 +65,7 @@ pipelines:
           supported_langs:
             - rust
           commands:
-            - bash_c: cargo fmt
+            - bash_c: cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
               ignore_fails: false
               show_success_output: false
               show_bash_c: true

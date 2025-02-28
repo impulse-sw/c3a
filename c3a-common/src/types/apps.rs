@@ -9,7 +9,7 @@ pub struct GenerateInvitationRequest {
 }
 
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
-#[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone)]
+#[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone, Debug)]
 pub struct SignUpOpts {
   pub allow_sign_up: bool,
   pub auto_assign_tags: Vec<AppTag>,
@@ -19,14 +19,14 @@ pub struct SignUpOpts {
 }
 
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
-#[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone)]
+#[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone, Debug)]
 pub struct ClientBasedAuthorizationOpts {
   pub enable_cba: bool,
   pub enable_cba_private_gateway_by: Option<AppTag>,
   pub require_cba_to_paths: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
 #[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
 pub struct AppTag {
   pub role: String,
@@ -37,7 +37,6 @@ pub struct AppTag {
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
 #[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone)]
 pub struct RegisterAppAuthConfigurationRequest {
-  #[serde(flatten)]
   pub config: AppAuthConfiguration,
   pub invite: Vec<u8>,
 }
@@ -50,16 +49,14 @@ pub struct RegisterAppAuthConfigurationResponse {
 }
 
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
-#[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone)]
+#[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone, Debug)]
 pub struct AppAuthConfiguration {
   pub app_name: String,
   pub domain: String,
   pub allowed_tags: Vec<AppTag>,
-  #[serde(flatten)]
   pub allow_sign_up: Option<SignUpOpts>,
-  #[serde(flatten)]
   pub client_based_auth_opts: Option<ClientBasedAuthorizationOpts>,
-  
+
   /// Generate Dilithium keypair via `pqc_dilithium::Keypair::generate`
   /// and `mode5` feature enabled, if you want to dynamically change
   /// the list of tags.
@@ -74,10 +71,22 @@ pub struct GetAppAuthConfigurationRequest {
 }
 
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
+pub type RemoveAppRequest = GetAppAuthConfigurationRequest;
+
+#[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
 #[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone)]
 pub struct GetAppAuthConfigurationResponse {
-  #[serde(flatten)]
   pub config: AppAuthConfiguration,
-  pub author_dpub: Vec<u8>,
   pub c3a_dpub: Vec<u8>,
+}
+
+#[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
+#[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone, Default)]
+pub struct EditAppAuthConfigurationRequest {
+  pub edit_app: String,
+  pub app_name: Option<String>,
+  pub domain: Option<String>,
+  pub allowed_tags: Option<Vec<AppTag>>,
+  pub allow_sign_up: Option<SignUpOpts>,
+  pub client_based_auth_opts: Option<ClientBasedAuthorizationOpts>,
 }

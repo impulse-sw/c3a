@@ -169,3 +169,92 @@ pipelines:
                         type: from_env_file
                         env_file_path: c3a-worker/.env
                         key: C3A_PRIVATE_ADM_KEY
+  - title: format
+    desc: ""
+    info: c3a-format@0.1.0
+    tags:
+      - cargo
+      - fmt
+      - rust
+    actions:
+      - title: Format C3A Worker
+        desc: Получено из `Format `.rs` files`.
+        info: cargo-fmt@0.1.0
+        tags: []
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cd c3a-worker && cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Format C3A Common
+        desc: Получено из `Format `.rs` files`.
+        info: cargo-fmt@0.1.0
+        tags: []
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cd c3a-common && cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Format C3A Client
+        desc: Получено из `Format `.rs` files`.
+        info: cargo-fmt@0.1.0
+        tags: []
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cd c3a-common && cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Format Leptos in C3A Frontend
+        desc: Format Leptos `.rs` files
+        info: leptos-fmt@0.1.0
+        tags:
+          - rust
+          - cargo
+          - fmt
+        requirements:
+          - type: exists
+            path: ~/.cargo/bin/leptosfmt
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cd c3a-frontend && leptosfmt -t 2 ./**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Format C3A Frontend
+        desc: Получено из `Format `.rs` files`.
+        info: cargo-fmt@0.1.0
+        tags: []
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cd c3a-frontend && cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
