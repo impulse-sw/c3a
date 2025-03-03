@@ -4,9 +4,11 @@
 
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
 mod apps;
+mod users;
 
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
 pub use apps::*;
+pub use users::*;
 
 use serde::{Deserialize, Serialize};
 

@@ -4,7 +4,7 @@ langs:
   - rust
 targets:
   - arch: x86_64
-    os: Linux
+    os: linux
     os_derivative: any
     os_version:
       type: no

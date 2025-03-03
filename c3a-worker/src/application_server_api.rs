@@ -71,11 +71,22 @@ async fn generate_invitation(req: &mut Request, depot: &mut Depot) -> MResult<Ms
 /// If app is registered already, status code 400 will be returned.
 #[endpoint(
   tags("maintenance"),
+  request_body(
+    content = RegisterAppAuthConfigurationRequest,
+    content_type = "application/msgpack",
+    description = "App configuration register request data"
+  ),
+  parameters((
+    "C3A-Sign" = String,
+    Header,
+    description = "Dilithium5 request signature"
+  )),
   responses((
     status_code = 200,
-    description = "Service availability check result",
+    description = "Response with C3A public Dilithium5 key",
     body = RegisterAppAuthConfigurationResponse,
-    content_type = ["application/msgpack"]
+    content_type = ["application/msgpack"],
+    headers(("C3A-Sign" = String, description = "Dilithium5 response signature"))
   ))
 )]
 #[instrument(skip_all, fields(http.uri = req.uri().path(), http.method = req.method().as_str()))]
@@ -113,7 +124,30 @@ async fn app_register(
   msgpack!(answer)
 }
 
-#[endpoint(tags("maintenance"))]
+/// Gets information about this application.
+///
+/// Method exists for only application servers and their authors
+/// to get know if they need to change their configuration.
+#[endpoint(
+  tags("maintenance"),
+  request_body(
+    content = GetAppAuthConfigurationRequest,
+    content_type = "application/msgpack",
+    description = "Get app configuration request data"
+  ),
+  parameters((
+    "C3A-Sign" = String,
+    Header,
+    description = "Dilithium5 request signature"
+  )),
+  responses((
+    status_code = 200,
+    description = "Application configuration",
+    body = GetAppAuthConfigurationResponse,
+    content_type = ["application/msgpack"],
+    headers(("C3A-Sign" = String, description = "Dilithium5 response signature"))
+  ))
+)]
 #[instrument(skip_all, fields(http.uri = req.uri().path(), http.method = req.method().as_str()))]
 async fn app_get_info(
   req: &mut Request,
@@ -147,6 +181,7 @@ async fn app_get_info(
   msgpack!(answer)
 }
 
+/// Edits app configuration.
 #[endpoint(tags("maintenance"))]
 #[instrument(skip_all, fields(http.uri = req.uri().path(), http.method = req.method().as_str()))]
 async fn edit_app_configuration(req: &mut Request, depot: &mut Depot) -> MResult<OK> {
@@ -188,6 +223,7 @@ async fn edit_app_configuration(req: &mut Request, depot: &mut Depot) -> MResult
   ok!()
 }
 
+/// Removes app configuration from C3A Service.
 #[endpoint(tags("maintenance"))]
 #[instrument(skip_all, fields(http.uri = req.uri().path(), http.method = req.method().as_str()))]
 async fn app_remove(req: &mut Request, depot: &mut Depot) -> MResult<OK> {
@@ -212,6 +248,13 @@ async fn app_remove(req: &mut Request, depot: &mut Depot) -> MResult<OK> {
   ok!()
 }
 
+async fn register_user(req: &mut Request, res: &mut Response, depot: &mut Depot) -> MResult<MsgPack<RegisterUserResponse>> {
+  
+  
+  unimplemented!()
+}
+
+/// Router to application servers' API.
 pub(crate) fn application_server_api() -> Router {
   Router::new()
     .push(Router::with_path("/health-check").get(health_check))

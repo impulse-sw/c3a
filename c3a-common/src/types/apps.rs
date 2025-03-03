@@ -11,11 +11,11 @@ pub struct GenerateInvitationRequest {
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
 #[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone, Debug)]
 pub struct SignUpOpts {
+  pub require_valid_email: bool,
+  pub exclude_email_domains: Vec<String>,
   pub allow_sign_up: bool,
   pub auto_assign_tags: Vec<AppTag>,
-  pub force_2fa: bool,
-  pub min_login_size: Option<usize>,
-  pub max_login_size: Option<usize>,
+  pub authentication_flow: Vec<AuthenticationRequirement>,
 }
 
 #[cfg(any(feature = "app-server-types", feature = "c3a-worker-types"))]
@@ -31,6 +31,14 @@ pub struct ClientBasedAuthorizationOpts {
 pub struct AppTag {
   pub role: String,
   pub scope: String,
+}
+
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
+pub enum AuthenticationRequirement {
+  Password { min_size: usize },
+  TOTPCode { existing_totp_key: String },
+  Question,
 }
 
 /// Configuration struct for registering your application in C3A Service.
