@@ -248,11 +248,13 @@ async fn app_remove(req: &mut Request, depot: &mut Depot) -> MResult<OK> {
   ok!()
 }
 
-async fn register_user(req: &mut Request, res: &mut Response, depot: &mut Depot) -> MResult<MsgPack<RegisterUserResponse>> {
-  
-  
-  unimplemented!()
-}
+// async fn register_user(
+//   req: &mut Request,
+//   res: &mut Response,
+//   depot: &mut Depot,
+// ) -> MResult<MsgPack<RegisterUserResponse>> {
+//   unimplemented!()
+// }
 
 /// Router to application servers' API.
 pub(crate) fn application_server_api() -> Router {
@@ -348,9 +350,20 @@ mod tests {
           role: String::from("user"),
           scope: String::from("read"),
         }],
-        force_2fa: false,
-        min_login_size: Some(8),
-        max_login_size: Some(16),
+        identify_by: c3a_common::IdenticationRequirement::Nickname {
+          spaces: false,
+          upper_registry: false,
+          characters: false,
+        },
+        allow_honeypots: false,
+        allow_recovery_key: true,
+        authentication_flow: vec![],
+        enable_fail_to_ban: Some(c3a_common::Fail2BanOptions {
+          max_allowed_unsuccessful_attempts: 5,
+          ban_login_expiration: c3a_common::chrono::TimeDelta::hours(6),
+          ban_ip: false,
+          ban_ip_expiration: None,
+        }),
       }),
       client_based_auth_opts: None,
       author_dpub: keypair.public.to_vec(),
@@ -481,9 +494,20 @@ mod tests {
           role: String::from("user"),
           scope: String::from("read"),
         }],
-        force_2fa: false,
-        min_login_size: Some(8),
-        max_login_size: Some(16),
+        identify_by: c3a_common::IdenticationRequirement::Nickname {
+          spaces: false,
+          upper_registry: false,
+          characters: false,
+        },
+        allow_honeypots: false,
+        allow_recovery_key: true,
+        authentication_flow: vec![],
+        enable_fail_to_ban: Some(c3a_common::Fail2BanOptions {
+          max_allowed_unsuccessful_attempts: 5,
+          ban_login_expiration: c3a_common::chrono::TimeDelta::hours(6),
+          ban_ip: false,
+          ban_ip_expiration: None,
+        }),
       }),
       client_based_auth_opts: None,
       author_dpub: keypair.public.to_vec(),
