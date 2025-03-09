@@ -6,6 +6,7 @@ license = { workspace = true }
 authors = { workspace = true }
 
 [dependencies]
+c3a-common = { workspace = true, features = ["app-client-types", "pqc-utils"] }
 cc-utils = { workspace = true, features = ["reqwest"] }
 cc-ui-kit = { workspace = true }
 leptos = { workspace = true, features = ["csr"] }
