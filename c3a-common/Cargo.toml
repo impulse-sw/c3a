@@ -16,6 +16,7 @@ regex = { workspace = true }
 rmp-serde = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
+totp-rs = { workspace = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
 pqc_dilithium = { optional = true, workspace = true, features = ["wasm"] }

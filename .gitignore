@@ -6,3 +6,4 @@ c3a-frontend/dist
 c3a-worker/c3a-frontend
 c3a-worker/.env
 .directory
+.zed

@@ -13,15 +13,13 @@ use c3a_common::{
   GetAppAuthConfigurationResponse, RegisterAppAuthConfigurationRequest, RegisterAppAuthConfigurationResponse,
   RemoveAppRequest, generate,
 };
-use cc_server_kit::{prelude::*, salvo::Response};
+use cc_server_kit::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
-use crate::{
-  Setup,
-  kv::{KvDb, PreConverted, extract_db},
-  utils::{sign_by_header, verify_sign_by_header},
-};
+use crate::Setup;
+use crate::kv::{KvDb, PreConverted, extract_db};
+use crate::utils::{sign_by_header, verify_sign_by_header};
 
 /// Service availability check.
 #[endpoint(
@@ -357,13 +355,15 @@ mod tests {
         },
         allow_honeypots: false,
         allow_recovery_key: true,
-        authentication_flow: vec![],
+        allowed_authentication_flow: vec![],
+        required_authentication: vec![],
         enable_fail_to_ban: Some(c3a_common::Fail2BanOptions {
           max_allowed_unsuccessful_attempts: 5,
           ban_login_expiration: c3a_common::chrono::TimeDelta::hours(6),
           ban_ip: false,
           ban_ip_expiration: None,
         }),
+        token_encryption_type: c3a_common::TokenEncryptionType::None,
       }),
       client_based_auth_opts: None,
       author_dpub: keypair.public.to_vec(),
@@ -501,13 +501,15 @@ mod tests {
         },
         allow_honeypots: false,
         allow_recovery_key: true,
-        authentication_flow: vec![],
+        allowed_authentication_flow: vec![],
+        required_authentication: vec![],
         enable_fail_to_ban: Some(c3a_common::Fail2BanOptions {
           max_allowed_unsuccessful_attempts: 5,
           ban_login_expiration: c3a_common::chrono::TimeDelta::hours(6),
           ban_ip: false,
           ban_ip_expiration: None,
         }),
+        token_encryption_type: c3a_common::TokenEncryptionType::None,
       }),
       client_based_auth_opts: None,
       author_dpub: keypair.public.to_vec(),

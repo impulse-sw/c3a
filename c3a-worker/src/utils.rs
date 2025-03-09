@@ -38,3 +38,12 @@ pub(crate) fn sign_by_header(
 
   Ok(())
 }
+
+pub(crate) fn take_exp_from_duration(duration: chrono::TimeDelta) -> MResult<chrono::DateTime<chrono::Utc>> {
+  let curr_time = chrono::Utc::now();
+  curr_time.checked_add_signed(duration).ok_or(
+    ErrorResponse::from("No way to add duration to current time")
+      .with_500()
+      .build(),
+  )
+}

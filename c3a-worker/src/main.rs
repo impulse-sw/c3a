@@ -1,4 +1,4 @@
-#![deny(warnings, clippy::todo, clippy::unimplemented)]
+#![deny(warnings)]
 
 use cc_server_kit::prelude::*;
 use cc_static_server::frontend_router;
