@@ -5,13 +5,13 @@ use cc_static_server::frontend_router;
 use salvo::affix_state;
 use serde::Deserialize;
 
-mod application_server_api;
+mod api;
 mod services;
 
 pub(crate) mod kv;
 pub(crate) mod utils;
 
-use crate::application_server_api::application_server_api;
+use crate::api::applications::application_server_api;
 
 #[derive(Deserialize, Default, Clone)]
 pub(crate) struct Setup {
@@ -35,6 +35,8 @@ async fn main() -> MResult<()> {
   if setup.private_adm_key.is_some() {
     panic!("You can't setup private key in `c3a-worker.yaml`!")
   }
+
+  dotenv::dotenv().ok();
   setup.private_adm_key = Some(std::env::var("C3A_PRIVATE_ADM_KEY")?);
 
   let state = load_generic_state(&setup).await?;

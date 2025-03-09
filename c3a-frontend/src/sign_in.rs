@@ -2,6 +2,4 @@
 use cc_ui_kit::prelude::*;
 
 #[component]
-pub(crate) fn SignInPage() -> impl IntoView {
-  view! {}
-}
+pub(crate) fn SignInPage() -> impl IntoView {}

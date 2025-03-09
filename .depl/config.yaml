@@ -1,0 +1,579 @@
+project_name: c3a
+version: 4
+langs:
+  - rust
+targets:
+  - arch: x86_64
+    os: linux
+    os_derivative: any
+    os_version:
+      type: no
+  - arch: wasm32
+    os: web
+    os_derivative: any
+    os_version:
+      type: no
+deploy_toolkit: docker
+cache_files:
+  - .git
+  - Cargo.lock
+  - target
+artifacts:
+  - target/x86_64-unknown-linux-gnu/release/c3a-worker
+  - c3a-frontend/dist
+  - c3a-worker/c3a-worker.yaml
+  - c3a-worker/.env
+variables:
+  - title: C3A Private Admin Key
+    is_secret: true
+    value:
+      type: from_env_file
+      env_file_path: .env
+      key: C3A_PRIVATE_ADM_KEY
+place_artifacts_into_project_root:
+  - from: target/x86_64-unknown-linux-gnu/release/c3a-worker
+    to: c3a-worker
+  - from: c3a-frontend/dist
+    to: dist
+  - from: c3a-worker/c3a-worker.yaml
+    to: c3a-worker.yaml
+  - from: c3a-worker/.env
+    to: .env
+pipelines:
+  - title: common-ops
+    desc: Common monorepo operations
+    info: c3a-common-ops@0.1.0
+    tags:
+      - cargo
+      - clippy
+      - lint
+    default: true
+    actions:
+      - title: Lint `c3a-common` on x86-64
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package c3a-common --target x86_64-unknown-linux-gnu
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `c3a-common` on wasm32
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package c3a-common --target wasm32-unknown-unknown --no-default-features --features=app-client-types,pqc-utils
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `c3a-client`
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package c3a-client --target wasm32-unknown-unknown
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `c3a-frontend`
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package c3a-frontend --target wasm32-unknown-unknown
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `c3a-worker`
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package c3a-worker --target x86_64-unknown-linux-gnu
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Format
+        desc: Получено из `Format `.rs` files`.
+        info: cargo-fmt@0.1.0
+        tags: []
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Test docs
+        desc: ''
+        info: cargo-doc@0.1.0
+        tags:
+          - cargo
+          - doc
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo test --doc
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Generate docs
+        desc: ''
+        info: cargo-doc@0.1.0
+        tags:
+          - cargo
+          - doc
+        exec_in_project_dir: false
+        action:
+          type: build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo doc --target x86_64-unknown-linux-gnu --workspace --no-deps
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+  - title: build-c3a-worker
+    desc: Build `c3a-worker`
+    info: c3a-worker@0.1.0
+    tags:
+      - cargo
+      - clippy
+      - lint
+    default: true
+    actions:
+      - title: Cargo Build (Release)
+        desc: Build the Rust project with Cargo default settings in release mode
+        info: cargo-rel@0.1
+        tags:
+          - rust
+          - cargo
+        requirements:
+          - type: exists
+            path: /bin/cargo
+        action:
+          type: build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo build --release --package c3a-worker --target x86_64-unknown-linux-gnu
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+      - title: Clear Test KvDb Data
+        desc: ""
+        info: clear-test-kv-data@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: custom
+          bash_c: rm -rf c3a-worker/.fjall_data
+          ignore_fails: false
+          show_success_output: false
+          show_bash_c: true
+          only_when_fresh: false
+          daemon: false
+      - title: Test
+        desc: Получено из `Start C3A`.
+        info: c3a-start@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: test
+          command:
+            bash_c: RUST_BACKTRACE=1 cargo test --package c3a-worker
+            ignore_fails: false
+            show_success_output: true
+            show_bash_c: true
+            only_when_fresh: false
+          success_when_found: "test result: ok."
+      - title: UPX Compress
+        desc: Compress the binary with UPX.
+        info: upx-compress@0.1.0
+        tags:
+          - upx
+        requirements:
+          - type: exists_any
+            paths:
+              - /usr/bin/upx
+              - ~/.local/bin/upx
+        exec_in_project_dir: false
+        action:
+          type: post_build
+          supported_langs:
+            - rust
+            - go
+            - c
+            - cpp
+          commands:
+            - bash_c: upx <af>
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+              daemon: false
+              placeholders:
+                - <af>
+              replacements:
+                - group:
+                    - from: <af>
+                      to:
+                        title: target/x86_64-unknown-linux-gnu/release/c3a-worker
+                        is_secret: false
+                        value:
+                          type: plain
+                          value: target/x86_64-unknown-linux-gnu/release/c3a-worker
+  - title: build-c3a-frontend
+    desc: Build `build-c3a-frontend`
+    info: c3a-frontend-build@0.1.0
+    tags:
+      - cargo
+      - leptos
+      - trunk
+      - rust
+      - wasm
+      - web
+    default: true
+    actions:
+      - title: Format `leptos` macroses
+        desc: Format Leptos `.rs` files
+        info: leptos-fmt@0.1.0
+        tags:
+          - rust
+          - cargo
+          - fmt
+        requirements:
+          - type: exists
+            path: ~/.cargo/bin/leptosfmt
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cd c3a-frontend && leptosfmt -t 2 ./**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Format Rust code
+        desc: Format `.rs` files
+        info: cargo-fmt@0.1.0
+        tags:
+          - rust
+          - cargo
+          - fmt
+        exec_in_project_dir: true
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cd c3a-frontend && cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Compile Tailwind Styles
+        desc: Получено из `Compile Tailwind Styles`. Compile application style classes with `tailwindcss` JS util.
+        info: tailwind-css@0.1.0
+        tags:
+          - rust
+          - css
+          - tailwind
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - CSS
+          commands:
+            - bash_c: cd c3a-frontend && tailwindcss -i ./input.css -o ./public/tailwind.css --minify
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Trunk Build
+        desc: Получено из `Trunk Build`. Build WASM application with `trunk` in release mode.
+        info: trunk-release@0.1.0
+        tags:
+          - cargo
+          - rust
+          - trunk
+          - wasm
+          - web
+        requirements:
+          - type: exists
+            path: ~/.cargo/bin/trunk
+        exec_in_project_dir: false
+        action:
+          type: build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: trunk build --release --config c3a-frontend/Trunk.toml
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Optimize WASM
+        desc: Run `wasm-opt` with `-Oz` argument inside `dist` folder
+        info: wasm-opt@0.1.0
+        tags:
+          - wasm
+          - wasm-opt
+        requirements:
+          - type: exists
+            path: /bin/wasm-opt
+        exec_in_project_dir: false
+        action:
+          type: post_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: wasm-opt -Oz --all-features -o {file} {file}
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+              placeholders:
+                - "{file}"
+              replacements:
+                - group:
+                    - from: "{file}"
+                      to:
+                        title: wasm-project-file
+                        is_secret: false
+                        value:
+                          type: plain
+                          value: c3a-frontend/dist/c3a-frontend_bg.wasm
+      - title: Add `tailwind.css` from `public` to `dist`
+        desc: ""
+        info: add-tailwind-css-to-dist-folder@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: post_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cp c3a-frontend/public/tailwind.css c3a-frontend/dist/
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Add `favicon.ico` from `public` to `dist`
+        desc: ""
+        info: add-favicon-to-dist-folder@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: post_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cp c3a-frontend/public/favicon.ico c3a-frontend/dist/
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+  - title: deploy-c3a-worker
+    desc: Deploy `c3a-worker`
+    info: c3a-worker@0.1.0
+    tags:
+      - cargo
+      - clippy
+      - lint
+    default: false
+    actions:
+      - title: Cargo Build (Release)
+        desc: Build the Rust project with Cargo default settings in release mode
+        info: cargo-rel@0.1
+        tags:
+          - rust
+          - cargo
+        requirements:
+          - type: exists
+            path: /bin/cargo
+        action:
+          type: build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo build --release --package c3a-worker --target x86_64-unknown-linux-gnu
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+      - title: Clear Test KvDb Data
+        desc: ""
+        info: clear-test-kv-data@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: custom
+          bash_c: rm -rf c3a-worker/.fjall_data
+          ignore_fails: false
+          show_success_output: false
+          show_bash_c: true
+          only_when_fresh: false
+          daemon: false
+      - title: Test
+        desc: Получено из `Start C3A`.
+        info: c3a-start@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: test
+          command:
+            bash_c: RUST_BACKTRACE=1 cargo test --package c3a-worker
+            ignore_fails: false
+            show_success_output: true
+            show_bash_c: true
+            only_when_fresh: false
+          success_when_found: "test result: ok."
+      - title: UPX Compress
+        desc: Compress the binary with UPX.
+        info: upx-compress@0.1.0
+        tags:
+          - upx
+        requirements:
+          - type: exists_any
+            paths:
+              - /usr/bin/upx
+              - ~/.local/bin/upx
+        exec_in_project_dir: false
+        action:
+          type: post_build
+          supported_langs:
+            - rust
+            - go
+            - c
+            - cpp
+          commands:
+            - bash_c: upx <af>
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+              daemon: false
+              placeholders:
+                - <af>
+              replacements:
+                - group:
+                    - from: <af>
+                      to:
+                        title: target/x86_64-unknown-linux-gnu/release/c3a-worker
+                        is_secret: false
+                        value:
+                          type: plain
+                          value: target/x86_64-unknown-linux-gnu/release/c3a-worker
+      - title: Copy `c3a-worker.yaml` config file
+        desc: ''
+        info: cp-config@0.1.0
+        tags: []
+        requirements: []
+        exec_in_project_dir: false
+        action:
+          type: post_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cp c3a-worker/c3a-worker.yaml .
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+              daemon: false
+      - title: Copy `c3a-frontend` distribution folder
+        desc: ''
+        info: cp-dist@0.1.0
+        tags: []
+        exec_in_project_dir: false
+        action:
+          type: post_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cp -r c3a-frontend/dist .
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+              daemon: false
+      - title: Start C3A
+        desc: ""
+        info: c3a-start@0.1.0
+        tags: []
+        requirements:
+          - type: exists
+            path: dist
+        exec_in_project_dir: false
+        action:
+          type: observe
+          command:
+            bash_c: C3A_PRIVATE_ADM_KEY=<KEY> ./target/x86_64-unknown-linux-gnu/release/c3a-worker
+            ignore_fails: true
+            show_success_output: true
+            show_bash_c: false
+            only_when_fresh: false
+            placeholders:
+              - <KEY>
+            replacements:
+              - group:
+                  - from: <KEY>
+                    to:
+                      title: C3A Private Admin Key
+                      is_secret: true
+                      value:
+                        type: from_env_file
+                        env_file_path: c3a-worker/.env
+                        key: C3A_PRIVATE_ADM_KEY

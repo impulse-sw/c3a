@@ -1,3 +1,5 @@
+#![deny(warnings, clippy::todo, clippy::unimplemented)]
+
 mod components;
 
 mod info;
@@ -31,7 +33,7 @@ fn main() {
 #[component]
 fn App() -> impl IntoView {
   provide_meta_context();
-  let i18n = use_i18n();
+  // let i18n = use_i18n();
 
   view! {
     <Title formatter=move |text| format!("{text} - CC Services") />
@@ -41,7 +43,7 @@ fn App() -> impl IntoView {
       "/" => view! { <InfoPage /> }.into_any(),
       _ => {
         redirect("/404".to_string()).unwrap();
-        view! {}.into_any()
+        ().into_any()
       }
     }}
   }

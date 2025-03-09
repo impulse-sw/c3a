@@ -22,7 +22,7 @@ pub enum SignError {
 
 #[cfg(feature = "pqc-utils")]
 pub fn sign<T: serde::Serialize>(data: &T, keypair: &pqc_dilithium::Keypair) -> Result<Vec<u8>, SignError> {
-  let data = rmp_serde::to_vec(data).map_err(|e| SignError::Serialize(e))?;
+  let data = rmp_serde::to_vec(data).map_err(SignError::Serialize)?;
   Ok(keypair.sign(&data).to_vec())
 }
 
@@ -36,8 +36,8 @@ where
   U: serde::Serialize,
   T: serde::Serialize,
 {
-  let mut data = rmp_serde::to_vec(header).map_err(|e| SignError::Serialize(e))?;
-  data.extend_from_slice(&rmp_serde::to_vec(payload).map_err(|e| SignError::Serialize(e))?);
+  let mut data = rmp_serde::to_vec(header).map_err(SignError::Serialize)?;
+  data.extend_from_slice(&rmp_serde::to_vec(payload).map_err(SignError::Serialize)?);
   Ok(keypair.sign(&data).to_vec())
 }
 
@@ -51,8 +51,8 @@ where
   U: serde::Serialize,
   T: serde::Serialize,
 {
-  let mut data = rmp_serde::to_vec(header).map_err(|e| SignError::Serialize(e))?;
-  data.extend_from_slice(&rmp_serde::to_vec(payload).map_err(|e| SignError::Serialize(e))?);
+  let mut data = rmp_serde::to_vec(header).map_err(SignError::Serialize)?;
+  data.extend_from_slice(&rmp_serde::to_vec(payload).map_err(SignError::Serialize)?);
   Ok(keypair.sign(&data).to_vec())
 }
 
@@ -65,7 +65,7 @@ pub enum VerifyError {
 
 #[cfg(feature = "pqc-utils")]
 pub fn verify<T: serde::Serialize>(data: &T, sign: &[u8], public_key: &[u8]) -> Result<bool, VerifyError> {
-  let data = rmp_serde::to_vec(data).map_err(|e| VerifyError::Serialize(e))?;
+  let data = rmp_serde::to_vec(data).map_err(VerifyError::Serialize)?;
   Ok(pqc_dilithium::verify(sign, &data, public_key).is_ok())
 }
 
@@ -122,7 +122,7 @@ pub fn encrypt_chacha20poly1305(
     consts::U32,
   };
 
-  let serialized = rmp_serde::to_vec(message).map_err(|e| EncryptError::Serialize(e))?;
+  let serialized = rmp_serde::to_vec(message).map_err(EncryptError::Serialize)?;
   let key = GenericArray::<u8, U32>::from_slice(key);
   let cipher = ChaCha20Poly1305::new(key);
   let nonce = ChaCha20Poly1305::generate_nonce(rand::thread_rng());
@@ -155,7 +155,7 @@ pub fn decrypt_chacha20poly1305<T: serde::de::DeserializeOwned>(
   let cipher = ChaCha20Poly1305::new(key);
   let nonce = GenericArray::<u8, U12>::from_slice(nonce);
   let plaintext = cipher.decrypt(nonce, ciphertext).map_err(|_| DecryptError::Decrypt)?;
-  let deserialized = rmp_serde::from_slice::<T>(plaintext.as_slice()).map_err(|e| DecryptError::Deserialize(e))?;
+  let deserialized = rmp_serde::from_slice::<T>(plaintext.as_slice()).map_err(DecryptError::Deserialize)?;
   Ok(deserialized)
 }
 
@@ -190,12 +190,9 @@ pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
     container: payload,
   };
   let (enc_payload, nonce) = if let Some(server_enc) = server_enc {
-    encrypt_chacha20poly1305(&payload, server_enc).map_err(|e| DeployError::Encrypt(e))?
+    encrypt_chacha20poly1305(&payload, server_enc).map_err(DeployError::Encrypt)?
   } else {
-    (
-      rmp_serde::to_vec(&payload).map_err(|e| EncryptError::Serialize(e))?,
-      vec![],
-    )
+    (rmp_serde::to_vec(&payload).map_err(EncryptError::Serialize)?, vec![])
   };
 
   let enc_payload = URL_SAFE.encode(&enc_payload);
@@ -207,11 +204,11 @@ pub fn deploy_mpaat<U: serde::Serialize, T: serde::Serialize>(
   };
 
   let sig = MPAATSignature {
-    sig: sign_mpaat(&header, &payload, server_keys).map_err(|e| DeployError::Sign(e))?,
+    sig: sign_mpaat(&header, &payload, server_keys).map_err(DeployError::Sign)?,
   };
-  let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(|e| DeployError::Serialize(e))?);
+  let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(DeployError::Serialize)?);
 
-  let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(|e| DeployError::Serialize(e))?);
+  let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(DeployError::Serialize)?);
 
   Ok(format!("{}.{}.{}", enc_payload, sig, header))
 }
@@ -233,7 +230,7 @@ pub fn deploy_lmpaat<U: serde::Serialize, T: serde::Serialize>(
     exp,
     container: payload,
   };
-  let enc_payload = rmp_serde::to_vec(&payload).map_err(|e| EncryptError::Serialize(e))?;
+  let enc_payload = rmp_serde::to_vec(&payload).map_err(EncryptError::Serialize)?;
   let enc_payload = URL_SAFE.encode(&enc_payload);
 
   let header = LightMPAATHeader {
@@ -242,11 +239,11 @@ pub fn deploy_lmpaat<U: serde::Serialize, T: serde::Serialize>(
   };
 
   let sig = MPAATSignature {
-    sig: sign_lmpaat(&header, &payload, server_keys).map_err(|e| DeployError::Sign(e))?,
+    sig: sign_lmpaat(&header, &payload, server_keys).map_err(DeployError::Sign)?,
   };
-  let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(|e| DeployError::Serialize(e))?);
+  let sig = STANDARD.encode(rmp_serde::to_vec(&sig).map_err(DeployError::Serialize)?);
 
-  let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(|e| DeployError::Serialize(e))?);
+  let header = STANDARD.encode(rmp_serde::to_vec(&header).map_err(DeployError::Serialize)?);
 
   Ok(format!("{}.{}.{}", enc_payload, sig, header))
 }
@@ -284,20 +281,20 @@ pub fn mpaat_extract_common_fields<U: serde::de::DeserializeOwned>(
   let parts = token.split('.').collect::<Vec<_>>();
 
   let sig = parts.get(1).ok_or(ExtractError::InvalidToken)?;
-  let sig = STANDARD.decode(sig).map_err(|e| ExtractError::Decode(e))?;
-  let sig = rmp_serde::from_slice::<MPAATSignature>(&sig).map_err(|e| ExtractError::Deserialize(e))?;
+  let sig = STANDARD.decode(sig).map_err(ExtractError::Decode)?;
+  let sig = rmp_serde::from_slice::<MPAATSignature>(&sig).map_err(ExtractError::Deserialize)?;
 
-  let payload = parts.get(0).ok_or(ExtractError::InvalidToken)?;
-  let payload = URL_SAFE.decode(payload).map_err(|e| ExtractError::Decode(e))?;
+  let payload = parts.first().ok_or(ExtractError::InvalidToken)?;
+  let payload = URL_SAFE.decode(payload).map_err(ExtractError::Decode)?;
 
   let header = parts.get(2).ok_or(ExtractError::InvalidToken)?;
-  let header = STANDARD.decode(header).map_err(|e| ExtractError::Decode(e))?;
+  let header = STANDARD.decode(header).map_err(ExtractError::Decode)?;
 
-  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(|e| ExtractError::Verify(e))? {
+  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(ExtractError::Verify)? {
     return Err(ExtractError::InvalidSignature);
   }
 
-  let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(|e| ExtractError::Deserialize(e))?;
+  let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(ExtractError::Deserialize)?;
   if header.sdpub != server_keys.public {
     return Err(ExtractError::InvalidServerPublicKey);
   }
@@ -324,29 +321,28 @@ where
   let parts = token.split('.').collect::<Vec<_>>();
 
   let sig = parts.get(1).ok_or(ExtractError::InvalidToken)?;
-  let sig = STANDARD.decode(sig).map_err(|e| ExtractError::Decode(e))?;
-  let sig = rmp_serde::from_slice::<MPAATSignature>(&sig).map_err(|e| ExtractError::Deserialize(e))?;
+  let sig = STANDARD.decode(sig).map_err(ExtractError::Decode)?;
+  let sig = rmp_serde::from_slice::<MPAATSignature>(&sig).map_err(ExtractError::Deserialize)?;
 
-  let payload = parts.get(0).ok_or(ExtractError::InvalidToken)?;
-  let payload = URL_SAFE.decode(payload).map_err(|e| ExtractError::Decode(e))?;
+  let payload = parts.first().ok_or(ExtractError::InvalidToken)?;
+  let payload = URL_SAFE.decode(payload).map_err(ExtractError::Decode)?;
 
   let header = parts.get(2).ok_or(ExtractError::InvalidToken)?;
-  let header = STANDARD.decode(header).map_err(|e| ExtractError::Decode(e))?;
+  let header = STANDARD.decode(header).map_err(ExtractError::Decode)?;
 
-  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(|e| ExtractError::Verify(e))? {
+  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(ExtractError::Verify)? {
     return Err(ExtractError::InvalidSignature);
   }
 
-  let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(|e| ExtractError::Deserialize(e))?;
+  let header = rmp_serde::from_slice::<MPAATHeader<U>>(&header).map_err(ExtractError::Deserialize)?;
   if header.sdpub != server_keys.public {
     return Err(ExtractError::InvalidServerPublicKey);
   }
 
   let payload = if let Some(server_enc) = server_enc {
-    decrypt_chacha20poly1305::<MPAATPayload<T>>(&payload, &header.nonce, server_enc)
-      .map_err(|e| ExtractError::Decrypt(e))?
+    decrypt_chacha20poly1305::<MPAATPayload<T>>(&payload, &header.nonce, server_enc).map_err(ExtractError::Decrypt)?
   } else {
-    rmp_serde::from_slice::<MPAATPayload<T>>(&payload).map_err(|e| ExtractError::Deserialize(e))?
+    rmp_serde::from_slice::<MPAATPayload<T>>(&payload).map_err(ExtractError::Deserialize)?
   };
 
   if current_dt >= payload.exp {
@@ -368,20 +364,20 @@ pub fn lmpaat_extract_common_fields<U: serde::de::DeserializeOwned>(
   let parts = token.split('.').collect::<Vec<_>>();
 
   let sig = parts.get(1).ok_or(ExtractError::InvalidToken)?;
-  let sig = STANDARD.decode(sig).map_err(|e| ExtractError::Decode(e))?;
-  let sig = rmp_serde::from_slice::<LightMPAATSignature>(&sig).map_err(|e| ExtractError::Deserialize(e))?;
+  let sig = STANDARD.decode(sig).map_err(ExtractError::Decode)?;
+  let sig = rmp_serde::from_slice::<LightMPAATSignature>(&sig).map_err(ExtractError::Deserialize)?;
 
-  let payload = parts.get(0).ok_or(ExtractError::InvalidToken)?;
-  let payload = URL_SAFE.decode(payload).map_err(|e| ExtractError::Decode(e))?;
+  let payload = parts.first().ok_or(ExtractError::InvalidToken)?;
+  let payload = URL_SAFE.decode(payload).map_err(ExtractError::Decode)?;
 
   let header = parts.get(2).ok_or(ExtractError::InvalidToken)?;
-  let header = STANDARD.decode(header).map_err(|e| ExtractError::Decode(e))?;
+  let header = STANDARD.decode(header).map_err(ExtractError::Decode)?;
 
-  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(|e| ExtractError::Verify(e))? {
+  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(ExtractError::Verify)? {
     return Err(ExtractError::InvalidSignature);
   }
 
-  let header = rmp_serde::from_slice::<LightMPAATHeader<U>>(&header).map_err(|e| ExtractError::Deserialize(e))?;
+  let header = rmp_serde::from_slice::<LightMPAATHeader<U>>(&header).map_err(ExtractError::Deserialize)?;
   Ok(header.common_public_fields)
 }
 
@@ -403,20 +399,20 @@ where
   let parts = token.split('.').collect::<Vec<_>>();
 
   let sig = parts.get(1).ok_or(ExtractError::InvalidToken)?;
-  let sig = STANDARD.decode(sig).map_err(|e| ExtractError::Decode(e))?;
-  let sig = rmp_serde::from_slice::<LightMPAATSignature>(&sig).map_err(|e| ExtractError::Deserialize(e))?;
+  let sig = STANDARD.decode(sig).map_err(ExtractError::Decode)?;
+  let sig = rmp_serde::from_slice::<LightMPAATSignature>(&sig).map_err(ExtractError::Deserialize)?;
 
-  let payload = parts.get(0).ok_or(ExtractError::InvalidToken)?;
-  let payload = URL_SAFE.decode(payload).map_err(|e| ExtractError::Decode(e))?;
+  let payload = parts.first().ok_or(ExtractError::InvalidToken)?;
+  let payload = URL_SAFE.decode(payload).map_err(ExtractError::Decode)?;
 
   let header = parts.get(2).ok_or(ExtractError::InvalidToken)?;
-  let header = STANDARD.decode(header).map_err(|e| ExtractError::Decode(e))?;
+  let header = STANDARD.decode(header).map_err(ExtractError::Decode)?;
 
-  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(|e| ExtractError::Verify(e))? {
+  if !verify_token(&header, &payload, &sig.sig, &server_keys.public).map_err(ExtractError::Verify)? {
     return Err(ExtractError::InvalidSignature);
   }
 
-  let payload = rmp_serde::from_slice::<LightMPAATPayload<T>>(&payload).map_err(|e| ExtractError::Deserialize(e))?;
+  let payload = rmp_serde::from_slice::<LightMPAATPayload<T>>(&payload).map_err(ExtractError::Deserialize)?;
   if current_dt >= payload.exp {
     return Err(ExtractError::Expired);
   }

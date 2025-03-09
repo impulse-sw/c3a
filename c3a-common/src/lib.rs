@@ -1,3 +1,5 @@
+#![deny(warnings, clippy::todo, clippy::unimplemented)]
+
 mod types;
 pub use types::*;
 

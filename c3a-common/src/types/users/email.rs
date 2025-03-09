@@ -16,13 +16,11 @@ impl Email {
   fn validate(email: &str) -> bool {
     let email_regex = regex::Regex::new(r"^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})$").unwrap();
 
-    let is_valid = email_regex.is_match(email)
+    email_regex.is_match(email)
       && !email.contains("..")
       && !email.starts_with('.')
       && !email.ends_with('.')
-      && email.matches('@').count() == 1;
-
-    is_valid
+      && email.matches('@').count() == 1
   }
 
   pub fn new(email: impl AsRef<str>) -> Result<Self, EmailError> {
