@@ -1,6 +1,8 @@
+use c3a_common::AppAuthConfiguration;
 use cc_server_kit::prelude::*;
-use fjall::{Keyspace, PartitionHandle, PersistMode};
+use fjall::{Keyspace, PartitionHandle, PersistMode, Slice};
 use serde::{Serialize, de::DeserializeOwned};
+use sha3::{Digest, Sha3_256};
 
 #[derive(Clone)]
 pub(crate) struct KvDb {
@@ -8,12 +10,10 @@ pub(crate) struct KvDb {
   db: PartitionHandle,
 }
 
-#[allow(dead_code)]
 pub(crate) struct PreConverted {
   val: Vec<u8>,
 }
 
-#[allow(dead_code)]
 impl PreConverted {
   pub(crate) fn new<T: Serialize>(value: &T) -> MResult<Self> {
     Ok(Self {
@@ -23,6 +23,15 @@ impl PreConverted {
 
   pub(crate) fn as_ref(&self) -> &Vec<u8> {
     &self.val
+  }
+  
+  pub(crate) fn from_raw(slice: Slice) -> Self {
+    Self { val: slice.to_vec() }
+  }
+  
+  #[allow(dead_code)]
+  pub(crate) fn try_from<T: DeserializeOwned>(&self) -> MResult<T> {
+    rmp_serde::from_slice::<T>(&self.val).map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())
   }
 }
 
@@ -72,11 +81,31 @@ impl KvDb {
   }
 
   pub(crate) fn app(app_name: &str) -> String {
-    format!("{}{}", Self::APPLICATION_PREFIX, app_name)
+    let mut hasher = Sha3_256::new();
+    hasher.update(app_name.as_bytes());
+    let hash = hex::encode(hasher.finalize());
+
+    format!("{}{}", Self::APPLICATION_PREFIX, hash)
   }
 
   pub(crate) fn user(user_name: &str) -> String {
-    format!("{}{}", Self::USER_PREFIX, user_name)
+    let mut hasher = Sha3_256::new();
+    hasher.update(user_name.as_bytes());
+    let hash = hex::encode(hasher.finalize());
+
+    format!("{}{}", Self::USER_PREFIX, hash)
+  }
+
+  pub(crate) async fn exists(&self, key: &str) -> MResult<bool> {
+    let state = self.clone();
+    let _key = key.to_string();
+
+    let exists = tokio::task::spawn_blocking(move || state.db.contains_key(_key))
+      .await
+      .map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?
+      .map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?;
+
+    Ok(exists)
   }
 
   pub(crate) async fn get_dilithium_keypair(&self) -> MResult<c3a_common::Keypair> {
@@ -103,6 +132,13 @@ impl KvDb {
     let mut buffer = unsafe { std::mem::transmute::<[MaybeUninit<u8>; 256], [u8; 256]>(buffer) };
     buffer.copy_from_slice(&secret);
     Ok(buffer)
+  }
+  
+  pub(crate) async fn get_app_conf(&self, app_name: &str) -> MResult<AppAuthConfiguration> {
+    self
+      .get::<AppAuthConfiguration>(&KvDb::app(app_name))
+      .await?
+      .ok_or(ErrorResponse::from("There is no such app.").with_404_pub().build())
   }
 
   pub(crate) async fn get<T: DeserializeOwned>(&self, key: &str) -> MResult<Option<T>> {
@@ -213,10 +249,21 @@ impl KvDb {
     Ok(Some(value))
   }
 
-  pub(crate) async fn batch_ops(&self, upsert: Vec<(String, PreConverted)>, remove: Vec<String>) -> MResult<()> {
+  pub(crate) async fn batch_ops(
+    &self,
+    get: Vec<String>,
+    upsert: Vec<(String, PreConverted)>,
+    remove: Vec<String>,
+  ) -> MResult<Vec<(String, Option<PreConverted>)>> {
     let state = self.clone();
 
-    tokio::task::spawn_blocking(move || {
+    let values = tokio::task::spawn_blocking(move || {
+      let mut values = vec![];
+      
+      for key in get {
+        values.push((key.to_owned(), state.db.get(&key)?.map(PreConverted::from_raw)));
+      }
+      
       let mut batch = state.keyspace.batch();
 
       for key in remove {
@@ -227,13 +274,15 @@ impl KvDb {
       }
 
       batch.commit()?;
-      state.keyspace.persist(PersistMode::SyncAll)
+      state.keyspace.persist(PersistMode::SyncAll)?;
+      
+      fjall::Result::<Vec<(String, Option<PreConverted>)>>::Ok(values)
     })
     .await
     .map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?
     .map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())?;
 
-    Ok(())
+    Ok(values)
   }
 }
 

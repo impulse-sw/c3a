@@ -9,7 +9,7 @@
 //! (it's allowed to get `200` or `400` status codes depending on your app registration existance).
 
 use c3a_common::{
-  AppAuthConfiguration, EditAppAuthConfigurationRequest, GenerateInvitationRequest, GetAppAuthConfigurationRequest,
+  EditAppAuthConfigurationRequest, GenerateInvitationRequest, GetAppAuthConfigurationRequest,
   GetAppAuthConfigurationResponse, RegisterAppAuthConfigurationRequest, RegisterAppAuthConfigurationResponse,
   RemoveAppRequest, generate,
 };
@@ -156,10 +156,7 @@ async fn app_get_info(
   let kv = extract_db(depot)?;
   let keypair = kv.get_dilithium_keypair().await?;
 
-  let app_conf = kv
-    .get::<AppAuthConfiguration>(&KvDb::app(&request.app_name))
-    .await?
-    .ok_or(ErrorResponse::from("There is no such app.").with_404_pub().build())?;
+  let app_conf = kv.get_app_conf(&request.app_name).await?;
   if app_conf.author_dpub.as_slice().ne(request.author_dpub.as_slice()) {
     return Err(
       ErrorResponse::from("Insufficient rights to read service info. Provide author's public key which also written on service' registration.")
@@ -186,10 +183,7 @@ async fn edit_app_configuration(req: &mut Request, depot: &mut Depot) -> MResult
   let request = req.parse_msgpack::<EditAppAuthConfigurationRequest>().await?;
   let kv = extract_db(depot)?;
 
-  let mut app_conf = kv
-    .get::<AppAuthConfiguration>(&KvDb::app(&request.edit_app))
-    .await?
-    .ok_or(ErrorResponse::from("There is no such app.").with_404_pub().build())?;
+  let mut app_conf = kv.get_app_conf(&request.edit_app).await?;
 
   verify_sign_by_header(req, &request, &app_conf.author_dpub)?;
 
@@ -210,6 +204,7 @@ async fn edit_app_configuration(req: &mut Request, depot: &mut Depot) -> MResult
   }
 
   kv.batch_ops(
+    vec![],
     vec![(
       KvDb::app(request.app_name.as_deref().unwrap_or(&request.edit_app)),
       PreConverted::new(&app_conf)?,
@@ -230,10 +225,7 @@ async fn app_remove(req: &mut Request, depot: &mut Depot) -> MResult<OK> {
 
   verify_sign_by_header(req, &request, &request.author_dpub)?;
 
-  let app_conf = kv
-    .get::<AppAuthConfiguration>(&KvDb::app(&request.app_name))
-    .await?
-    .ok_or(ErrorResponse::from("There is no such app.").with_400_pub().build())?;
+  let app_conf = kv.get_app_conf(&request.app_name).await?;
   if app_conf.author_dpub.as_slice().ne(request.author_dpub.as_slice()) {
     return Err(
       ErrorResponse::from("Insufficient rights to read service info. Provide author's public key which also written on service' registration.")

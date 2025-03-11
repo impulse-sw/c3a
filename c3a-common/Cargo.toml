@@ -10,8 +10,6 @@ base64 = { workspace = true }
 chacha20poly1305 = { workspace = true }
 chrono = { workspace = true }
 pqc_dilithium = { optional = true, workspace = true }
-rand = { workspace = true }
-rand_chacha = { workspace = true }
 regex = { workspace = true }
 rmp-serde = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -20,15 +18,20 @@ totp-rs = { workspace = true }
 
 [target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
 pqc_dilithium = { optional = true, workspace = true, features = ["wasm"] }
+u2f = { workspace = true, features = ["wasm"] }
 
 [target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
 cc-server-kit = { optional = true, workspace = true, features = ["oapi"] }
+rand = { workspace = true }
+rand_chacha = { workspace = true }
 salvo = { optional = true, workspace = true, features = ["oapi"] }
 pqc_dilithium = { optional = true, workspace = true }
+u2f = { workspace = true }
 
 [features]
-default = ["c3a-worker-types", "app-server-types", "app-client-types", "pqc-utils"]
+default = ["c3a-worker-types", "app-server-types", "app-client-types", "pqc-utils", "crypt-utils"]
 c3a-worker-types = ["dep:cc-server-kit", "dep:salvo"]
 app-server-types = ["dep:cc-server-kit", "dep:salvo"]
 app-client-types = []
 pqc-utils = ["dep:pqc_dilithium"]
+crypt-utils = []

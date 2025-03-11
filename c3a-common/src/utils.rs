@@ -86,20 +86,22 @@ pub fn base64_decode(data: &str) -> Result<Vec<u8>, base64::DecodeError> {
   URL_SAFE.decode(data)
 }
 
+#[cfg(feature = "crypt-utils")]
 pub fn generate_chacha20poly1305_key() -> [u8; 256] {
   use rand::Rng;
 
   let mut arr: [u8; 256] = [0; 256];
-  let mut rng = rand::thread_rng();
+  let mut rng = rand::rng();
   rng.fill(arr.as_mut_slice());
   arr
 }
 
+#[cfg(feature = "crypt-utils")]
 pub fn generate<const SZ: usize>() -> [u8; SZ] {
   use rand::Rng;
 
   let mut arr: [u8; SZ] = [0; SZ];
-  let mut rng = rand::thread_rng();
+  let mut rng = rand::rng();
   rng.fill(arr.as_mut_slice());
   arr
 }
@@ -118,14 +120,14 @@ pub fn encrypt_chacha20poly1305(
 ) -> Result<(Vec<u8>, Vec<u8>), EncryptError> {
   use chacha20poly1305::{
     ChaCha20Poly1305,
-    aead::{Aead, AeadCore, KeyInit, generic_array::GenericArray},
+    aead::{Aead, AeadCore, KeyInit, OsRng, generic_array::GenericArray},
     consts::U32,
   };
 
   let serialized = rmp_serde::to_vec(message).map_err(EncryptError::Serialize)?;
   let key = GenericArray::<u8, U32>::from_slice(key);
   let cipher = ChaCha20Poly1305::new(key);
-  let nonce = ChaCha20Poly1305::generate_nonce(rand::thread_rng());
+  let nonce = ChaCha20Poly1305::generate_nonce(&mut OsRng);
   let ciphertext = cipher
     .encrypt(&nonce, serialized.as_ref())
     .map_err(|_| EncryptError::Encrypt)?;

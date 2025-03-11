@@ -8,6 +8,7 @@ use serde::Deserialize;
 mod api;
 mod services;
 
+pub(crate) mod core;
 pub(crate) mod kv;
 pub(crate) mod utils;
 

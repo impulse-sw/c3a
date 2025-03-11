@@ -14,7 +14,7 @@ pub enum EmailError {
 
 impl Email {
   fn validate(email: &str) -> bool {
-    let email_regex = regex::Regex::new(r"^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4})$").unwrap();
+    let email_regex = regex::Regex::new(r"^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,10})$").unwrap();
 
     email_regex.is_match(email)
       && !email.contains("..")

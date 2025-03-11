@@ -6,16 +6,19 @@ license = { workspace = true }
 authors = { workspace = true }
 
 [dependencies]
-c3a-common = { workspace = true, features = ["c3a-worker-types", "pqc-utils"] }
+c3a-common = { workspace = true, features = ["c3a-worker-types", "pqc-utils", "crypt-utils"] }
 cc-server-kit = { workspace = true, features = ["oapi", "cc-utils", "otel", "test"] }
 cc-static-server = { workspace = true }
 chrono = { workspace = true }
 dotenv = { workspace = true }
 fjall = { workspace = true }
-rand = { workspace = true }
+hex = { workspace = true }
+rand = { workspace = true, features = ["std_rng"] }
 rmp-serde = { workspace = true }
 salvo = { workspace = true, features = ["test"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+sha3 = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 totp-rs = { workspace = true }
+u2f = { workspace = true, features = ["rand"] }
