@@ -49,6 +49,124 @@ pipelines:
       - lint
     default: true
     actions:
+      - title: Lint `dilithium` on x86-64
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package pqc_dilithium --target x86_64-unknown-linux-gnu
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `dilithium` on wasm32
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo clippy --package pqc_dilithium --target wasm32-unknown-unknown
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Test `dilithium`
+        desc: Тестирование проекта с помощью Cargo.
+        info: cargo-test@0.1.0
+        tags:
+          - cargo
+          - rust
+          - test
+        exec_in_project_dir: false
+        action:
+          type: test
+          command:
+            bash_c: cargo test --package pqc_dilithium
+            ignore_fails: false
+            show_success_output: true
+            show_bash_c: true
+          success_when_not_found: FAILED
+      - title: Lint `totp` on x86-64
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package totp-rs --target x86_64-unknown-linux-gnu
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `totp` on wasm32
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package totp-rs --target wasm32-unknown-unknown
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `u2f` on x86-64
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: cargo clippy --package u2f --target x86_64-unknown-linux-gnu
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
+      - title: Lint `u2f` on wasm32
+        desc: Получено из `Cargo Clippy`.
+        info: cargo-clippy@0.1.0
+        tags:
+          - cargo
+          - clippy
+        exec_in_project_dir: false
+        action:
+          type: pre_build
+          supported_langs:
+            - rust
+          commands:
+            - bash_c: RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo clippy --package u2f --target wasm32-unknown-unknown --features=wasm
+              ignore_fails: false
+              show_success_output: false
+              show_bash_c: true
+              only_when_fresh: false
       - title: Lint `c3a-common` on x86-64
         desc: Получено из `Cargo Clippy`.
         info: cargo-clippy@0.1.0
@@ -78,7 +196,7 @@ pipelines:
           supported_langs:
             - rust
           commands:
-            - bash_c: cargo clippy --package c3a-common --target wasm32-unknown-unknown --no-default-features --features=app-client-types,pqc-utils
+            - bash_c: RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo clippy --package c3a-common --target wasm32-unknown-unknown --no-default-features --features=app-client-types,pqc-utils
               ignore_fails: false
               show_success_output: false
               show_bash_c: true
@@ -112,7 +230,7 @@ pipelines:
           supported_langs:
             - rust
           commands:
-            - bash_c: cargo clippy --package c3a-frontend --target wasm32-unknown-unknown
+            - bash_c: RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo clippy --package c3a-frontend --target wasm32-unknown-unknown
               ignore_fails: false
               show_success_output: false
               show_bash_c: true

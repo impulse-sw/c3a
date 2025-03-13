@@ -1,0 +1,20 @@
+[package]
+name = "u2f-app"
+version = "0.2.0"
+authors = ["Flavio Oliveira <flavio@wisespace.io>"]
+edition = "2024"
+
+[dependencies]
+u2f = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+lazy_static = "0.2"
+
+[dependencies.rocket]
+version = "0.5"
+features = ["tls"]
+
+[dependencies.rocket_contrib]
+version = "0.4"
+default-features = false
+features = ["json"]

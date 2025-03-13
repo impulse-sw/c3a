@@ -6,6 +6,7 @@ mod email;
 
 pub use crate::types::users::email::*;
 
+#[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "snake_case", tag = "type")]
 #[non_exhaustive]
@@ -14,7 +15,7 @@ pub enum AuthenticationData {
   U2F { challenge: u2f::protocol::Challenge },
 }
 
-// #[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
+#[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 pub struct RegistrationRequirementsResponse {
   pub allowed_authentication_flow: Vec<UserAuthenticationRequirement>,
@@ -92,13 +93,28 @@ pub type AuthenticationFlow = Vec<AuthenticationStep>;
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "snake_case", tag = "type")]
 pub enum AuthenticationStep {
-  Password { salt: Vec<u8>, hash: Vec<u8> },
-  TOTPCode { secret: String },
-  Question { question: String, salt: Vec<u8>, hash: Vec<u8> },
+  Password {
+    salt: Vec<u8>,
+    hash: Vec<u8>,
+  },
+  TOTPCode {
+    secret: String,
+  },
+  Question {
+    question: String,
+    salt: Vec<u8>,
+    hash: Vec<u8>,
+  },
   EmailConfirmation,
   Proxy,
-  U2FKey { registration: u2f::register::Registration },
-  X509Certificate { public_certificate: Vec<u8> },
-  RawDilithium5Certificate { public_key: Vec<u8> },
+  U2FKey {
+    registration: u2f::register::Registration,
+  },
+  X509Certificate {
+    public_certificate: Vec<u8>,
+  },
+  RawDilithium5Certificate {
+    public_key: Vec<u8>,
+  },
   Other,
 }

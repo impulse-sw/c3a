@@ -24,11 +24,11 @@ impl PreConverted {
   pub(crate) fn as_ref(&self) -> &Vec<u8> {
     &self.val
   }
-  
+
   pub(crate) fn from_raw(slice: Slice) -> Self {
     Self { val: slice.to_vec() }
   }
-  
+
   #[allow(dead_code)]
   pub(crate) fn try_from<T: DeserializeOwned>(&self) -> MResult<T> {
     rmp_serde::from_slice::<T>(&self.val).map_err(|e| ErrorResponse::from(e.to_string()).with_500().build())
@@ -133,7 +133,7 @@ impl KvDb {
     buffer.copy_from_slice(&secret);
     Ok(buffer)
   }
-  
+
   pub(crate) async fn get_app_conf(&self, app_name: &str) -> MResult<AppAuthConfiguration> {
     self
       .get::<AppAuthConfiguration>(&KvDb::app(app_name))
@@ -259,11 +259,11 @@ impl KvDb {
 
     let values = tokio::task::spawn_blocking(move || {
       let mut values = vec![];
-      
+
       for key in get {
         values.push((key.to_owned(), state.db.get(&key)?.map(PreConverted::from_raw)));
       }
-      
+
       let mut batch = state.keyspace.batch();
 
       for key in remove {
@@ -275,7 +275,7 @@ impl KvDb {
 
       batch.commit()?;
       state.keyspace.persist(PersistMode::SyncAll)?;
-      
+
       fjall::Result::<Vec<(String, Option<PreConverted>)>>::Ok(values)
     })
     .await

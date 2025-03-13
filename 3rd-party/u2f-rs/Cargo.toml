@@ -1,0 +1,40 @@
+[package]
+name = "u2f"
+version = "0.2.7"
+edition = { workspace = true }
+license = "MIT OR Apache-2.0"
+authors = ["Flavio Oliveira <flavio@wisespace.io>", "Klimenty Titov <aclo.create@gmail.com>"]
+description = "Rust FIDO U2F Library"
+keywords = ["authentication", "encryption", "U2F", "2fa"]
+categories = ["authentication"]
+repository = "https://github.com/markcda/u2f-rs"
+readme = "README.md"
+
+[lib]
+name = "u2f"
+path = "src/lib.rs"
+
+[features]
+default = ["rand"]
+rand = ["dep:rand"]
+salvo-schema = ["dep:salvo"]
+wasm = ["ring/wasm32_unknown_unknown_js"]
+
+[dependencies]
+base64 = { workspace = true }
+byteorder = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+rand = { optional = true, workspace = true, features = ["std_rng"] }
+ring = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+untrusted = { workspace = true }
+webpki = { workspace = true }
+
+[target.'cfg(any(target_arch = "wasm32", target_arch = "wasm64"))'.dependencies]
+getrandom = { workspace = true, features = ["wasm_js"] }
+
+[target.'cfg(not(any(target_arch = "wasm32", target_arch = "wasm64")))'.dependencies]
+salvo = { optional = true, workspace = true, features = ["oapi"] }

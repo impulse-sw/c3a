@@ -26,7 +26,7 @@ rand = { workspace = true }
 rand_chacha = { workspace = true }
 salvo = { optional = true, workspace = true, features = ["oapi"] }
 pqc_dilithium = { optional = true, workspace = true }
-u2f = { workspace = true }
+u2f = { workspace = true, features = ["salvo-schema"] }
 
 [features]
 default = ["c3a-worker-types", "app-server-types", "app-client-types", "pqc-utils", "crypt-utils"]

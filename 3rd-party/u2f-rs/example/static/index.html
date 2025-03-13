@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+<head>
+    <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js"></script>
+</head>
+<body>
+
+    <h1>Rust U2F App test</h1>
+    <input type="button" value="Register a 2FA key" onClick="register()">
+    <p/>
+    <input type="button" value="Authenticate" onClick="authenticate()">
+
+    <script>
+
+        /* u2f.ErrorCodes is undefined in Firefox v64 default to zero if it is undefined, same as in the u2f spec */
+        const U2F_ERROR_CODES_OK = typeof u2f.ErrorCodes === 'undefined' ?  0 : u2f.ErrorCodes['OK'];
+
+        /* Reject promise if u2f error, translates the error code to an `Error` */
+        const rejectU2fError = (resolve, reject, response) => {
+            if (typeof response.errorCode === 'undefined' || response.errorCode === U2F_ERROR_CODES_OK) {
+                resolve(response);
+            } else {
+                reject(parseError(response.errorCode));
+            }
+        }
+
+        /* Promisify u2f.register usually taking callback function */
+        const u2fRegisterAsync = (appId, registerRequests, registeredKeys, opt_timeoutSeconds) =>
+            new Promise((resolve, reject) =>  u2f.register(appId, registerRequests, registeredKeys, response => rejectU2fError(resolve, reject, response), opt_timeoutSeconds));
+
+        /* Promisify u2f.sign usually taking callback function */
+        const u2fSignAsync = (appId, challenge, registeredKeys, opt_timeoutSeconds) =>
+            new Promise((resolve, reject) => u2f.sign(appId, challenge, registeredKeys, response => rejectU2fError(resolve, reject, response), opt_timeoutSeconds));
+
+        /* Get a registration request from the server
+        *  Register the key
+        */
+        async function register() {
+            try {
+                const req = await fetch('/api/register_request').then(response => response.json());
+
+                const response = await Promise.race([
+                    showNotification("Registration"),
+                    u2fRegisterAsync(req.appId, req.registerRequests, req.registeredKeys, 30)
+                ]);
+
+                // null when dialog message is cancelled
+                if (response) {
+                    console.log(response);
+
+                    // Send the results back to server
+                    //  Check if it was successful
+                    await postJSON('/api/register_response', response);
+                    swal("Registered!", "Successful registered", "success");
+                }
+            }
+            catch(e) {
+                swal("Registration failed", e.message, "error");
+                throw e;
+            }
+        }
+
+        /* Get an authentication request from the server
+        *  Sign it with the key
+        */
+        async function authenticate() {
+            try {
+                const req =  await fetch('/api/sign_request').then(req => req.json());
+
+                const response = await Promise.race([
+                    showNotification("Authentication"),
+                    u2fSignAsync(req.appId, req.challenge, req.registeredKeys, 30)
+                ]);
+
+                // null when dialog message is cancelled
+                if (response) {
+                    console.log(response);
+                    // Verify the results on the server
+                    await postJSON('/api/sign_response', response);
+                    swal("Authenticated!", "Successfully authenticated", "success");
+                }
+            }
+            catch(e) {
+                swal("Authentication failed", e.message, "error");
+                throw e;
+            }
+        }
+
+        async function postJSON(url, data){
+            const response = await fetch(url, { method: 'POST', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } });
+            if (response.ok) {
+                return response.json();
+            }
+            throw new Error(response.statusText);
+        };
+
+        function parseError(errorCode) {
+            var message = "Unknown error: " + errorCode;
+            // In Firefox v64 u2f.ErrorCodes is undefined
+            if (typeof u2f.ErrorCodes !== 'undefined') {
+                for (name in u2f.ErrorCodes) {
+                    if (u2f.ErrorCodes[name] === errorCode) {
+                        message = name;
+                        break;
+                    }
+                }
+            }
+            return new Error(message);
+        }
+
+        function showNotification(action) {
+            return swal({
+                    title: action,
+                    text: "Press your key (Yubico) to proceed. Timeout in 30s.",
+                    buttons: {
+                        cancel: true,
+                        confirm: false
+                    },
+                });
+        }
+
+    </script>
+</body>
+</html>
