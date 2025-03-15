@@ -252,6 +252,22 @@ pipelines:
               show_success_output: false
               show_bash_c: true
               only_when_fresh: false
+      - title: Test `c3a-worker`
+        desc: Тестирование проекта с помощью Cargo.
+        info: cargo-test@0.1.0
+        tags:
+          - cargo
+          - rust
+          - test
+        exec_in_project_dir: false
+        action:
+          type: test
+          command:
+            bash_c: RUST_BACKTRACE=1 cargo test --package c3a-worker
+            ignore_fails: false
+            show_success_output: true
+            show_bash_c: true
+          success_when_not_found: FAILED
       - title: Format
         desc: Получено из `Format `.rs` files`.
         info: cargo-fmt@0.1.0
@@ -262,7 +278,7 @@ pipelines:
           supported_langs:
             - rust
           commands:
-            - bash_c: cargo fmt -- --config tab_spaces=2,max_width=120 */**/*.rs
+            - bash_c: cargo fmt -- --config tab_spaces=2,max_width=140 */**/*.rs
               ignore_fails: false
               show_success_output: false
               show_bash_c: true
@@ -324,7 +340,7 @@ pipelines:
           supported_langs:
             - rust
           commands:
-            - bash_c: cargo build --release --package c3a-worker --target x86_64-unknown-linux-gnu
+            - bash_c: RUSTFLAGS='-C target-cpu=native' cargo build --release --package c3a-worker --target x86_64-unknown-linux-gnu
               ignore_fails: false
               show_success_output: false
               show_bash_c: true
@@ -478,7 +494,7 @@ pipelines:
           supported_langs:
             - rust
           commands:
-            - bash_c: trunk build --release --config c3a-frontend/Trunk.toml
+            - bash_c: RUSTFLAGS='--cfg getrandom_backend="wasm_js"' trunk build --release --config c3a-frontend/Trunk.toml
               ignore_fails: false
               show_success_output: false
               show_bash_c: true
@@ -567,7 +583,7 @@ pipelines:
           supported_langs:
             - rust
           commands:
-            - bash_c: cargo build --release --package c3a-worker --target x86_64-unknown-linux-gnu
+            - bash_c: RUSTFLAGS='-C target-cpu=native' cargo build --release --package c3a-worker --target x86_64-unknown-linux-gnu
               ignore_fails: false
               show_success_output: false
               show_bash_c: true

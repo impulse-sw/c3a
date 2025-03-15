@@ -2,6 +2,29 @@
 use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
+#[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
+#[serde(rename_all = "snake_case", tag = "type")]
+pub enum IdenticationRequirement {
+  /// Simple nickname identication.
+  ///
+  /// You can specify:
+  /// 1. Allowance of spaces (e.g., `pimple crawler`)
+  /// 2. Allowance of upper-registry letters (e.g., `HelloKitty1983`)
+  /// 3. Allowance of characters except `_` & `-` (e.g., `MainForce **ELIGE**`)
+  Nickname {
+    spaces: bool,
+    upper_registry: bool,
+    characters: bool,
+  },
+
+  /// Email identication.
+  ///
+  /// You can specify email domains that you want to exclude
+  /// (for example, that domains which supports temporary registration).
+  Email { exclude_email_domains: Vec<String> },
+}
+
 #[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Email(String);
@@ -13,22 +36,22 @@ pub enum EmailError {
 }
 
 impl Email {
-  fn validate(email: &str) -> bool {
+  fn validate(email: &str) -> Result<(), EmailError> {
     let email_regex = regex::Regex::new(r"^([a-zA-Z0-9._%-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,10})$").unwrap();
-
-    email_regex.is_match(email)
-      && !email.contains("..")
-      && !email.starts_with('.')
-      && !email.ends_with('.')
-      && email.matches('@').count() == 1
+    if email_regex.is_match(email) && !email.contains("..") && !email.starts_with('.') {
+      Ok(())
+    } else {
+      Err(EmailError::Invalid)
+    }
   }
 
   pub fn new(email: impl AsRef<str>) -> Result<Self, EmailError> {
-    if !Email::validate(email.as_ref()) {
-      Err(EmailError::Invalid)
-    } else {
-      Ok(Self(email.as_ref().to_owned()))
-    }
+    Email::validate(email.as_ref())?;
+    Ok(Self(email.as_ref().to_owned()))
+  }
+
+  pub fn domain(&self) -> &str {
+    self.0.split('@').next_back().unwrap()
   }
 }
 
@@ -63,7 +86,7 @@ impl<'de> serde::de::Visitor<'de> for EmailVisitor {
   where
     E: serde::de::Error,
   {
-    if Email::validate(value) {
+    if Email::validate(value).is_ok() {
       Ok(Email(value.to_string()))
     } else {
       Err(E::custom(format!("invalid email address: {}", value)))

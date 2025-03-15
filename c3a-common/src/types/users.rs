@@ -2,9 +2,9 @@
 use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 
-mod email;
+mod ids;
 
-pub use crate::types::users::email::*;
+pub use crate::types::users::ids::*;
 
 #[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone)]
@@ -13,6 +13,7 @@ pub use crate::types::users::email::*;
 pub enum AuthenticationData {
   TOTP { alg: String, generated_secret: String },
   U2F { challenge: u2f::protocol::Challenge },
+  Email { salt: String, hash: Vec<u8> },
 }
 
 #[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]

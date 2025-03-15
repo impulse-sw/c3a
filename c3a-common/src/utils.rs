@@ -1,5 +1,6 @@
-use crate::types::{
-  LightMPAATHeader, LightMPAATPayload, LightMPAATSignature, MPAATHeader, MPAATPayload, MPAATSignature,
+use crate::{
+  Email, EmailError, IdenticationRequirement,
+  types::{LightMPAATHeader, LightMPAATPayload, LightMPAATSignature, MPAATHeader, MPAATPayload, MPAATSignature},
 };
 use thiserror::Error;
 
@@ -54,6 +55,44 @@ where
   let mut data = rmp_serde::to_vec(header).map_err(SignError::Serialize)?;
   data.extend_from_slice(&rmp_serde::to_vec(payload).map_err(SignError::Serialize)?);
   Ok(keypair.sign(&data).to_vec())
+}
+
+#[derive(Error, Debug)]
+pub enum ValidateIdentifierError {
+  #[error("Bad nickname for given options")]
+  BadNickname,
+  #[error("Bad email")]
+  BadEmail(#[from] EmailError),
+  #[error("Excluded domains")]
+  EmailFromExcluded,
+}
+
+pub fn validate_identifier(opts: &IdenticationRequirement, id: &str) -> Result<(), ValidateIdentifierError> {
+  match opts {
+    IdenticationRequirement::Nickname {
+      spaces,
+      upper_registry,
+      characters,
+    } => {
+      if id.contains(' ') && !spaces {
+        return Err(ValidateIdentifierError::BadNickname);
+      }
+      if id.chars().any(|c| c.is_uppercase()) && !upper_registry {
+        return Err(ValidateIdentifierError::BadNickname);
+      }
+      if id.chars().any(|c| !c.is_alphanumeric()) && !characters {
+        return Err(ValidateIdentifierError::BadNickname);
+      }
+      Ok(())
+    }
+    IdenticationRequirement::Email { exclude_email_domains } => {
+      let email = Email::new(id)?;
+      if exclude_email_domains.iter().any(|e| e.as_str().eq(email.domain())) {
+        return Err(ValidateIdentifierError::EmailFromExcluded);
+      }
+      Ok(())
+    }
+  }
 }
 
 #[cfg(feature = "pqc-utils")]

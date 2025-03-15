@@ -24,6 +24,7 @@ pqc_dilithium = { path = "3rd-party/dilithium", features = ["mode5"] }
 totp-rs = { path = "3rd-party/totp-rs", default-features = false }
 u2f = { path = "3rd-party/u2f-rs", default-features = false }
 
+argon2 = { git = "https://github.com/markcda/argon2.git", branch = "feat/argon2-0.5.3", default-features = false }
 base32 = "0.4"
 base64 = "0.22"
 byteorder = "1.3"
@@ -44,6 +45,8 @@ leptos = { version = "0.7", default-features = false }
 leptos_i18n = { version = "0.5", default-features = false }
 leptos_meta = "0.7"
 leptos_router = "0.7"
+lettre = { version = "0.11", default-features = false }
+passwords = "3.1"
 qrcodegen-image = { version = "1.4", features = ["base64"] }
 rand = "0.9"
 rand_chacha = "0.9"

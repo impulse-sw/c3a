@@ -2,6 +2,12 @@ use c3a_common::{base64_decode, base64_encode, sign, verify};
 use cc_server_kit::prelude::*;
 use cc_server_kit::salvo::{Request, Response};
 
+pub(crate) mod generators;
+pub(crate) mod hashes;
+
+pub(crate) use generators::*;
+pub(crate) use hashes::*;
+
 pub(crate) fn verify_sign_by_header(req: &mut Request, value: &impl serde::Serialize, public: &[u8]) -> MResult<()> {
   let req_sign = req.header::<String>(c3a_common::SIGN_HEADER).ok_or(
     ErrorResponse::from("There is no sign in `C3A-Sign` header provided.")

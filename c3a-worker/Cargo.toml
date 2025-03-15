@@ -6,6 +6,7 @@ license = { workspace = true }
 authors = { workspace = true }
 
 [dependencies]
+argon2 = { workspace = true, features = ["std", "password-hash", "rand"] }
 c3a-common = { workspace = true, features = ["c3a-worker-types", "pqc-utils", "crypt-utils"] }
 cc-server-kit = { workspace = true, features = ["oapi", "cc-utils", "otel", "test"] }
 cc-static-server = { workspace = true }
@@ -13,6 +14,8 @@ chrono = { workspace = true }
 dotenv = { workspace = true }
 fjall = { workspace = true }
 hex = { workspace = true }
+lettre = { workspace = true, features = ["builder", "hostname", "pool", "smtp-transport", "tokio1-rustls-tls"] }
+passwords = { workspace = true }
 rand = { workspace = true, features = ["std_rng"] }
 rmp-serde = { workspace = true }
 salvo = { workspace = true, features = ["test"] }

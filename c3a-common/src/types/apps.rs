@@ -4,7 +4,7 @@ use salvo::oapi::ToSchema;
 use serde::{Deserialize, Serialize};
 use std::net::IpAddr;
 
-use super::{TokenEncryptionType, UserAuthenticationRequirement};
+use crate::types::users::{IdenticationRequirement, TokenEncryptionType, UserAuthenticationRequirement};
 
 #[cfg(feature = "c3a-worker-types")]
 #[derive(Deserialize, Serialize, ToSchema, PartialEq, Eq, Hash, Clone)]
@@ -41,7 +41,7 @@ pub struct SignUpOpts {
 pub struct ClientBasedAuthorizationOpts {
   pub enable_cba: bool,
   pub enable_cba_private_gateway_by: Option<AppTag>,
-  pub require_cba_to_paths: Vec<String>,
+  pub require_cba_to_paths: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
@@ -49,29 +49,6 @@ pub struct ClientBasedAuthorizationOpts {
 pub struct AppTag {
   pub role: String,
   pub scope: String,
-}
-
-#[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]
-#[cfg_attr(any(feature = "app-server-types", feature = "c3a-worker-types"), derive(ToSchema))]
-#[serde(rename_all = "snake_case", tag = "type")]
-pub enum IdenticationRequirement {
-  /// Simple nickname identication.
-  ///
-  /// You can specify:
-  /// 1. Allowance of spaces (e.g., `pimple crawler`)
-  /// 2. Allowance of upper-registry letters (e.g., `HelloKitty1983`)
-  /// 3. Allowance of characters except `_` & `-` (e.g., `MainForce **ELIGE**`)
-  Nickname {
-    spaces: bool,
-    upper_registry: bool,
-    characters: bool,
-  },
-
-  /// Email identication.
-  ///
-  /// You can specify email domains that you want to exclude
-  /// (for example, that domains which supports temporary registration).
-  Email { exclude_email_domains: Vec<String> },
 }
 
 #[derive(Deserialize, Serialize, PartialEq, Eq, Hash, Clone, Debug)]

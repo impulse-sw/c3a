@@ -1,3 +1,4 @@
+#![feature(let_chains, string_from_utf8_lossy_owned)]
 #![deny(warnings)]
 
 use cc_server_kit::prelude::*;
@@ -10,6 +11,7 @@ mod services;
 
 pub(crate) mod core;
 pub(crate) mod kv;
+pub(crate) mod mailer;
 pub(crate) mod utils;
 
 use crate::api::applications::application_server_api;
@@ -38,15 +40,32 @@ async fn main() -> MResult<()> {
   }
 
   dotenv::dotenv().ok();
-  setup.private_adm_key = Some(std::env::var("C3A_PRIVATE_ADM_KEY")?);
+  setup.private_adm_key = Some(
+    if let Ok(key) = std::env::var("C3A_PRIVATE_ADM_KEY")
+      && key.chars().count() >= 128
+    {
+      key
+    } else {
+      return Err(ErrorResponse::from(
+        "There is no `C3A_PRIVATE_ADM_KEY` env variable with key of at least 128 chars!",
+      ));
+    },
+  );
 
   let state = load_generic_state(&setup).await?;
 
   let kv_db = crate::kv::KvDb::load("data")?;
   kv_db.initial_setup().await?;
 
+  let mailer = crate::mailer::init_mailer()?;
+
   let router = get_root_router(&state)
-    .hoop(affix_state::inject(state.clone()).inject(setup.clone()).inject(kv_db))
+    .hoop(
+      affix_state::inject(state.clone())
+        .inject(setup.clone())
+        .inject(kv_db)
+        .inject(mailer),
+    )
     .push(frontend_router())
     .push(application_server_api());
   let (server, _) = start(state, &setup, router).await?;

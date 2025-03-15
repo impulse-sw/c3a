@@ -2,23 +2,23 @@
 
 use std::io;
 
+use rocket::http::CookieJar;
 use u2f::messages::*;
 use u2f::protocol::*;
 use u2f::register::*;
 
-use rocket::http::{Cookie, Cookies};
-use rocket::response::NamedFile;
+use rocket::fs::NamedFile;
+use rocket::http::Cookie;
 use rocket::response::status::NotFound;
+use rocket::serde::json::Json;
 use rocket::{State, catch, catchers, get, post, routes};
-use rocket_contrib::json;
-use rocket_contrib::json::{Json, JsonValue};
 
-use std::error::Error;
+use serde_json::{Value as JsonValue, json};
 use std::sync::Mutex;
 
 static APP_ID: &'static str = "https://localhost:30443";
 
-lazy_static! {
+lazy_static::lazy_static! {
     // In a real application this could be a database lookup.
     static ref REGISTRATIONS: Mutex<Vec<Registration>> = {
         let registrations: Mutex<Vec<Registration>> = Mutex::new(vec![]);
@@ -31,13 +31,13 @@ struct U2fClient {
 }
 
 #[get("/")]
-fn index() -> io::Result<NamedFile> {
-  NamedFile::open("static/index.html")
+async fn index() -> io::Result<NamedFile> {
+  NamedFile::open("static/index.html").await
 }
 
 #[get("/api/register_request", format = "application/json")]
-fn register_request(mut cookies: Cookies, state: State<U2fClient>) -> Json<U2fRegisterRequest> {
-  let challenge = state.u2f.generate_challenge().unwrap();
+fn register_request(cookies: &CookieJar, state: &State<U2fClient>) -> Json<U2fRegisterRequest> {
+  let challenge = state.u2f.generate_challenge();
   let challenge_str = serde_json::to_string(&challenge);
 
   // Only for this demo we will keep the challenge in a private (encrypted) cookie
@@ -53,9 +53,9 @@ fn register_request(mut cookies: Cookies, state: State<U2fClient>) -> Json<U2fRe
 
 #[post("/api/register_response", format = "application/json", data = "<response>")]
 fn register_response(
-  mut cookies: Cookies,
+  cookies: &CookieJar,
   response: Json<RegisterResponse>,
-  state: State<U2fClient>,
+  state: &State<U2fClient>,
 ) -> Result<JsonValue, NotFound<String>> {
   let cookie = cookies.get_private("challenge");
 
@@ -65,11 +65,11 @@ fn register_response(
     match registration {
       Ok(reg) => {
         REGISTRATIONS.lock().unwrap().push(reg);
-        cookies.remove_private(Cookie::named("challenge"));
+        cookies.remove(Cookie::build("challenge"));
         return Ok(json!({"status": "success"}));
       }
       Err(e) => {
-        return Err(NotFound(format!("{:?}", e.description())));
+        return Err(NotFound(format!("{:?}", e.to_string())));
       }
     }
   } else {
@@ -78,8 +78,8 @@ fn register_response(
 }
 
 #[get("/api/sign_request", format = "application/json")]
-fn sign_request(mut cookies: Cookies, state: State<U2fClient>) -> Json<U2fSignRequest> {
-  let challenge = state.u2f.generate_challenge().unwrap();
+fn sign_request(cookies: &CookieJar, state: &State<U2fClient>) -> Json<U2fSignRequest> {
+  let challenge = state.u2f.generate_challenge();
   let challenge_str = serde_json::to_string(&challenge);
 
   // Only for this demo we will keep the challenge in a private (encrypted) cookie
@@ -92,9 +92,9 @@ fn sign_request(mut cookies: Cookies, state: State<U2fClient>) -> Json<U2fSignRe
 
 #[post("/api/sign_response", format = "application/json", data = "<response>")]
 fn sign_response(
-  mut cookies: Cookies,
+  cookies: &CookieJar,
   response: Json<SignResponse>,
-  state: State<U2fClient>,
+  state: &State<U2fClient>,
 ) -> Result<JsonValue, NotFound<String>> {
   let cookie = cookies.get_private("challenge");
   if let Some(ref cookie) = cookie {
@@ -132,20 +132,17 @@ fn not_found() -> JsonValue {
   })
 }
 
-fn rocket() -> rocket::Rocket {
+#[rocket::launch]
+fn rocket() -> _ {
   let u2f_client = U2fClient {
     u2f: U2f::new(APP_ID.into()),
   };
 
-  rocket::ignite()
+  rocket::build()
     .mount(
       "/",
       routes![index, register_request, register_response, sign_request, sign_response],
     )
-    .register(catchers![not_found])
+    .register("/", catchers![not_found])
     .manage(u2f_client)
-}
-
-fn main() {
-  rocket().launch();
 }
